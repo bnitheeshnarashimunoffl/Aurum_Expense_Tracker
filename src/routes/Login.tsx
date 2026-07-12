@@ -67,8 +67,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3 font-medium text-base disabled:opacity-60"
-            style={{ color: '#0B0D10' }}
+            className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3 font-medium text-ink disabled:opacity-60"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>

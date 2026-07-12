@@ -47,7 +47,9 @@ create table transactions (
   notes text,
   payment_mode text check (payment_mode in ('cash', 'upi', 'card')),
   is_business boolean default false,
-  preset_id uuid references quick_add_presets(id),
+  -- on delete set null: deleting a used preset must not be blocked by (or cascade
+  -- into) the transactions that were logged from it.
+  preset_id uuid references quick_add_presets(id) on delete set null,
   receipt_url text,
   created_at timestamptz default now()
 );
@@ -140,3 +142,13 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ============================================================================
+-- Migration for databases created from an earlier version of this file, where
+-- transactions.preset_id lacked ON DELETE SET NULL. Run this once (it's a no-op
+-- worry-free on fresh installs — just don't run it before the tables exist):
+--
+--   alter table transactions drop constraint transactions_preset_id_fkey;
+--   alter table transactions add constraint transactions_preset_id_fkey
+--     foreign key (preset_id) references quick_add_presets(id) on delete set null;
+-- ============================================================================

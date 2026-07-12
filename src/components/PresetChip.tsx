@@ -12,9 +12,8 @@ export default function PresetChip({ preset, active, onClick }: PresetChipProps)
     <button
       onClick={onClick}
       className={`min-h-[44px] flex-shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-        active ? 'bg-accent' : 'glass text-primary'
+        active ? 'bg-accent text-ink' : 'glass text-primary'
       }`}
-      style={active ? { color: '#0B0D10' } : undefined}
     >
       {preset.label} · {formatCurrency(preset.amount)}
     </button>

@@ -1,5 +1,9 @@
 import type { Category, Transaction } from './types'
 
+// Prefix a leading apostrophe on cells that spreadsheet apps would otherwise
+// execute as formulas (CSV injection via =, +, -, @ in user-entered text).
+const guardFormula = (cell: string) => (/^[=+\-@\t\r]/.test(cell) ? `'${cell}` : cell)
+
 export function transactionsToCSV(transactions: Transaction[], categories: Category[]): string {
   const categoryById = new Map(categories.map((c) => [c.id, c]))
   const header = ['Date', 'Type', 'Category', 'Amount', 'Payment Mode', 'Personal/Business', 'Notes']
@@ -8,11 +12,11 @@ export function transactionsToCSV(transactions: Transaction[], categories: Categ
     return [
       t.date,
       t.type,
-      category?.name ?? 'Unknown',
+      guardFormula(category?.name ?? 'Unknown'),
       t.amount.toFixed(2),
       t.payment_mode ?? '',
       t.is_business ? 'Business' : 'Personal',
-      (t.notes ?? '').replace(/"/g, '""'),
+      guardFormula((t.notes ?? '').replace(/"/g, '""')),
     ]
   })
 

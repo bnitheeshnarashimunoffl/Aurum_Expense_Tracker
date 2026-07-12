@@ -3,6 +3,8 @@ import { useCategories } from '@/hooks/useCategories'
 import { useTransactions, type TransactionFilters } from '@/hooks/useTransactions'
 import TransactionRow from '@/components/TransactionRow'
 import TransactionDetailSheet from '@/components/TransactionDetailSheet'
+import Segmented from '@/components/Segmented'
+import { SkeletonRows } from '@/components/Skeleton'
 import type { Scope, Transaction, TxType } from '@/lib/types'
 import { formatDate } from '@/lib/format'
 
@@ -22,7 +24,7 @@ export default function TransactionsList() {
     from: from || undefined,
     to: to || undefined,
   }
-  const { transactions, deleteTransaction } = useTransactions(filters)
+  const { transactions, loading, error, refresh } = useTransactions(filters)
 
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
@@ -40,31 +42,29 @@ export default function TransactionsList() {
       <h1 className="font-display mb-4 pt-4 text-2xl font-bold text-primary">Activity</h1>
 
       <div className="mb-4 space-y-2">
-        <div className="flex gap-2">
-          {(['all', 'income', 'expense'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setType(t)}
-              className={`min-h-[36px] flex-1 rounded-full text-xs font-medium capitalize ${
-                type === t ? 'bg-accent' : 'neu-raised text-muted'
-              }`}
-              style={type === t ? { color: '#0B0D10' } : undefined}
-            >
-              {t}
-            </button>
-          ))}
-          {(['all', 'personal', 'business'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setScope(s)}
-              className={`min-h-[36px] flex-1 rounded-full text-xs font-medium capitalize ${
-                scope === s ? 'bg-accent' : 'neu-raised text-muted'
-              }`}
-              style={scope === s ? { color: '#0B0D10' } : undefined}
-            >
-              {s}
-            </button>
-          ))}
+        <div className="flex gap-3">
+          <Segmented
+            ariaLabel="Type"
+            className="flex-1"
+            value={type}
+            onChange={setType}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'income', label: 'Income' },
+              { value: 'expense', label: 'Expense' },
+            ]}
+          />
+          <Segmented
+            ariaLabel="Scope"
+            className="flex-1"
+            value={scope}
+            onChange={setScope}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'personal', label: 'Personal' },
+              { value: 'business', label: 'Business' },
+            ]}
+          />
         </div>
 
         <div className="flex gap-2">
@@ -84,19 +84,32 @@ export default function TransactionsList() {
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
+            aria-label="From date"
             className="neu-pressed min-h-[40px] w-28 rounded-card border-none bg-surface px-2 text-xs text-primary outline-none"
           />
           <input
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
+            aria-label="To date"
             className="neu-pressed min-h-[40px] w-28 rounded-card border-none bg-surface px-2 text-xs text-primary outline-none"
           />
         </div>
       </div>
 
-      {grouped.length === 0 ? (
-        <p className="py-12 text-center text-sm text-muted">No transactions match these filters.</p>
+      {loading ? (
+        <SkeletonRows count={6} />
+      ) : error ? (
+        <div className="neu-pressed rounded-card px-4 py-8 text-center">
+          <p className="text-sm text-muted">Couldn't load your activity.</p>
+          <button onClick={refresh} className="mt-2 text-sm font-medium text-accent">
+            Try again
+          </button>
+        </div>
+      ) : grouped.length === 0 ? (
+        <div className="neu-pressed rounded-card px-4 py-10 text-center">
+          <p className="text-sm text-muted">No transactions match these filters.</p>
+        </div>
       ) : (
         <div className="space-y-5">
           {grouped.map(([date, items]) => (
@@ -121,7 +134,6 @@ export default function TransactionsList() {
         transaction={selected}
         category={selected ? categoryById.get(selected.category_id) : undefined}
         onClose={() => setSelected(null)}
-        onDelete={deleteTransaction}
       />
     </div>
   )

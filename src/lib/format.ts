@@ -23,24 +23,28 @@ export function formatDateShort(dateStr: string): string {
   })
 }
 
-export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
+// All of these must stay in LOCAL time. toISOString() converts to UTC, which for
+// IST (+05:30) shifts local midnight back to the previous day — e.g. it made
+// "start of month" resolve to the last day of the previous month, every time.
+function toLocalISODate(d: Date): string {
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${month}-${day}`
 }
 
+export function todayISO(): string {
+  return toLocalISODate(new Date())
+}
+
+/** Monday of the current week. */
 export function startOfWeekISO(): string {
   const d = new Date()
   const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(d.setDate(diff))
-  return monday.toISOString().slice(0, 10)
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1))
+  return toLocalISODate(d)
 }
 
 export function startOfMonthISO(): string {
   const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10)
-}
-
-export function endOfMonthISO(): string {
-  const d = new Date()
-  return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10)
+  return toLocalISODate(new Date(d.getFullYear(), d.getMonth(), 1))
 }

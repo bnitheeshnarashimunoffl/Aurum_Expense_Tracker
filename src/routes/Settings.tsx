@@ -7,13 +7,15 @@ import { transactionsToCSV, downloadCSV } from '@/lib/csv'
 import { todayISO } from '@/lib/format'
 import BottomSheet from '@/components/BottomSheet'
 import CategoryColorDot from '@/components/CategoryColorDot'
+import Segmented from '@/components/Segmented'
+import { SkeletonRows } from '@/components/Skeleton'
 import type { Category, TxType } from '@/lib/types'
 
 const DEFAULT_COLOR = '#C9A46A'
 
 export default function Settings() {
   const navigate = useNavigate()
-  const { categories, addCategory, updateCategory, archiveCategory } = useCategories()
+  const { categories, loading, addCategory, updateCategory, archiveCategory } = useCategories()
   const { transactions } = useTransactions()
 
   const [editing, setEditing] = useState<Category | 'new' | null>(null)
@@ -22,12 +24,14 @@ export default function Settings() {
   const [color, setColor] = useState(DEFAULT_COLOR)
   const [isBusiness, setIsBusiness] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   function openNew() {
     setName('')
     setType('expense')
     setColor(DEFAULT_COLOR)
     setIsBusiness(false)
+    setFormError(null)
     setEditing('new')
   }
 
@@ -36,11 +40,16 @@ export default function Settings() {
     setType(category.type)
     setColor(category.color)
     setIsBusiness(category.is_business)
+    setFormError(null)
     setEditing(category)
   }
 
   async function handleSave() {
-    if (!name.trim()) return
+    if (!name.trim()) {
+      setFormError('Give the category a name.')
+      return
+    }
+    setFormError(null)
     setSaving(true)
     try {
       if (editing === 'new') {
@@ -49,12 +58,14 @@ export default function Settings() {
         await updateCategory(editing.id, { name: name.trim(), color, is_business: isBusiness })
       }
       setEditing(null)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Couldn't save — try again.")
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleExportCSV() {
+  function handleExportCSV() {
     const csv = transactionsToCSV(transactions, categories)
     downloadCSV(csv, `aurum-transactions-${todayISO()}.csv`)
   }
@@ -74,31 +85,31 @@ export default function Settings() {
       <section className="mb-6">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="font-display text-sm font-medium text-primary">Categories</h2>
-          <button
-            onClick={openNew}
-            className="neu-raised min-h-[36px] rounded-full bg-accent px-3 text-xs font-medium"
-            style={{ color: '#0B0D10' }}
-          >
+          <button onClick={openNew} className="neu-raised min-h-[36px] rounded-full bg-accent px-3 text-xs font-medium text-ink">
             + Add
           </button>
         </div>
-        <div className="space-y-2">
-          {activeCategories.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => openEdit(c)}
-              className="neu-raised flex w-full items-center justify-between rounded-card px-4 py-3 text-left"
-            >
-              <span className="flex items-center gap-2 text-sm text-primary">
-                <CategoryColorDot color={c.color} />
-                {c.parent_id ? `↳ ${c.name}` : c.name}
-              </span>
-              <span className="text-xs capitalize text-muted">
-                {c.type} {c.is_business && '· business'}
-              </span>
-            </button>
-          ))}
-        </div>
+        {loading ? (
+          <SkeletonRows count={5} />
+        ) : (
+          <div className="space-y-2">
+            {activeCategories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => openEdit(c)}
+                className="neu-raised flex w-full items-center justify-between rounded-card px-4 py-3 text-left"
+              >
+                <span className="flex items-center gap-2 text-sm text-primary">
+                  <CategoryColorDot color={c.color} />
+                  {c.parent_id ? `↳ ${c.name}` : c.name}
+                </span>
+                <span className="text-xs capitalize text-muted">
+                  {c.type} {c.is_business && '· business'}
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
         {archivedCategories.length > 0 && (
           <details className="mt-3">
@@ -110,7 +121,7 @@ export default function Settings() {
                     <CategoryColorDot color={c.color} />
                     {c.name}
                   </span>
-                  <button onClick={() => archiveCategory(c.id, false)} className="text-xs text-accent">
+                  <button onClick={() => archiveCategory(c.id, false)} className="min-h-[36px] text-xs text-accent">
                     Restore
                   </button>
                 </div>
@@ -121,10 +132,7 @@ export default function Settings() {
       </section>
 
       <section className="mb-6">
-        <Link
-          to="/presets"
-          className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary"
-        >
+        <Link to="/presets" className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary">
           Manage quick-add presets
         </Link>
       </section>
@@ -137,10 +145,7 @@ export default function Settings() {
         >
           Export all transactions to CSV
         </button>
-        <Link
-          to="/export"
-          className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary"
-        >
+        <Link to="/export" className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary">
           Export & Share PDF report
         </Link>
       </section>
@@ -169,20 +174,16 @@ export default function Settings() {
           </div>
 
           {editing === 'new' && (
-            <div className="flex rounded-full bg-black/30 p-1">
-              {(['expense', 'income'] as TxType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`min-h-[44px] flex-1 rounded-full text-sm font-medium capitalize ${
-                    type === t ? 'bg-accent' : 'text-muted'
-                  }`}
-                  style={type === t ? { color: '#0B0D10' } : undefined}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
+            <Segmented
+              ariaLabel="Category type"
+              size="md"
+              value={type}
+              onChange={setType}
+              options={[
+                { value: 'expense', label: 'Expense' },
+                { value: 'income', label: 'Income' },
+              ]}
+            />
           )}
 
           <div>
@@ -208,11 +209,16 @@ export default function Settings() {
             Business category
           </label>
 
+          {formError && (
+            <p role="alert" className="text-sm text-expense">
+              {formError}
+            </p>
+          )}
+
           <button
             onClick={handleSave}
             disabled={saving}
-            className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3 font-medium disabled:opacity-60"
-            style={{ color: '#0B0D10' }}
+            className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3 font-medium text-ink disabled:opacity-60"
           >
             {saving ? 'Saving…' : 'Save category'}
           </button>

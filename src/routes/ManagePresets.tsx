@@ -4,11 +4,13 @@ import { useCategories } from '@/hooks/useCategories'
 import BottomSheet from '@/components/BottomSheet'
 import Amount from '@/components/Amount'
 import CategoryColorDot from '@/components/CategoryColorDot'
+import Segmented from '@/components/Segmented'
+import { SkeletonRows } from '@/components/Skeleton'
 import { formatDate } from '@/lib/format'
 import type { QuickAddPreset, TxType } from '@/lib/types'
 
 export default function ManagePresets() {
-  const { presets, addPreset, updatePreset, deletePreset } = usePresets()
+  const { presets, loading, addPreset, updatePreset, deletePreset } = usePresets()
   const { categories } = useCategories()
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
@@ -18,12 +20,16 @@ export default function ManagePresets() {
   const [type, setType] = useState<TxType>('income')
   const [categoryId, setCategoryId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   function openNew() {
     setLabel('')
     setAmount('')
     setType('income')
     setCategoryId('')
+    setFormError(null)
+    setConfirmingDelete(false)
     setEditing('new')
   }
 
@@ -32,12 +38,26 @@ export default function ManagePresets() {
     setAmount(preset.amount.toFixed(2))
     setType(preset.type)
     setCategoryId(preset.category_id)
+    setFormError(null)
+    setConfirmingDelete(false)
     setEditing(preset)
   }
 
   async function handleSave() {
     const parsedAmount = parseFloat(amount)
-    if (!label.trim() || !parsedAmount || !categoryId) return
+    if (!label.trim()) {
+      setFormError('Give the preset a label.')
+      return
+    }
+    if (!parsedAmount || parsedAmount <= 0) {
+      setFormError('Enter a default amount greater than zero.')
+      return
+    }
+    if (!categoryId) {
+      setFormError('Pick a category.')
+      return
+    }
+    setFormError(null)
     setSaving(true)
     try {
       const category = categoryById.get(categoryId)
@@ -59,6 +79,26 @@ export default function ManagePresets() {
         })
       }
       setEditing(null)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Couldn't save — try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (editing === 'new' || !editing) return
+    if (!confirmingDelete) {
+      setConfirmingDelete(true)
+      return
+    }
+    setSaving(true)
+    try {
+      await deletePreset(editing.id)
+      setEditing(null)
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Couldn't delete — try again.")
+      setConfirmingDelete(false)
     } finally {
       setSaving(false)
     }
@@ -70,20 +110,20 @@ export default function ManagePresets() {
     <div className="px-4 pt-4">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-primary">Presets</h1>
-        <button
-          onClick={openNew}
-          className="neu-raised min-h-[44px] rounded-full bg-accent px-4 text-sm font-medium"
-          style={{ color: '#0B0D10' }}
-        >
+        <button onClick={openNew} className="neu-raised min-h-[44px] rounded-full bg-accent px-4 text-sm font-medium text-ink">
           + New
         </button>
       </div>
 
-      {presets.length === 0 ? (
-        <p className="py-12 text-center text-sm text-muted">
-          No presets yet. Create one for recurring income or expenses you enter manually — like your allowance or a
-          retainer.
-        </p>
+      {loading ? (
+        <SkeletonRows count={3} />
+      ) : presets.length === 0 ? (
+        <div className="neu-pressed rounded-card px-4 py-10 text-center">
+          <p className="text-sm text-muted">
+            No presets yet. Create one for recurring income or expenses you enter manually — like your allowance or a
+            retainer.
+          </p>
+        </div>
       ) : (
         <div className="space-y-2">
           {presets.map((preset) => {
@@ -115,23 +155,19 @@ export default function ManagePresets() {
 
       <BottomSheet open={editing !== null} onClose={() => setEditing(null)} title={editing === 'new' ? 'New preset' : 'Edit preset'}>
         <div className="space-y-4">
-          <div className="flex rounded-full bg-black/30 p-1">
-            {(['income', 'expense'] as TxType[]).map((t) => (
-              <button
-                key={t}
-                onClick={() => {
-                  setType(t)
-                  setCategoryId('')
-                }}
-                className={`min-h-[44px] flex-1 rounded-full text-sm font-medium capitalize ${
-                  type === t ? 'bg-accent' : 'text-muted'
-                }`}
-                style={type === t ? { color: '#0B0D10' } : undefined}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            ariaLabel="Preset type"
+            size="md"
+            value={type}
+            onChange={(t) => {
+              setType(t)
+              setCategoryId('')
+            }}
+            options={[
+              { value: 'income', label: 'Income' },
+              { value: 'expense', label: 'Expense' },
+            ]}
+          />
 
           <div>
             <label className="mb-1.5 block text-sm text-muted">Label</label>
@@ -149,9 +185,11 @@ export default function ManagePresets() {
             <input
               type="number"
               inputMode="decimal"
+              min="0"
+              step="0.01"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="neu-pressed w-full rounded-card border-none bg-surface px-4 py-3 text-primary outline-none focus:ring-1 focus:ring-accent"
+              className="neu-pressed font-display tabular-nums w-full rounded-card border-none bg-surface px-4 py-3 text-primary outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
 
@@ -171,24 +209,27 @@ export default function ManagePresets() {
             </select>
           </div>
 
+          {formError && (
+            <p role="alert" className="text-sm text-expense">
+              {formError}
+            </p>
+          )}
+
           <button
             onClick={handleSave}
             disabled={saving}
-            className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3 font-medium disabled:opacity-60"
-            style={{ color: '#0B0D10' }}
+            className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3 font-medium text-ink disabled:opacity-60"
           >
             {saving ? 'Saving…' : 'Save preset'}
           </button>
 
           {editing !== 'new' && editing && (
             <button
-              onClick={async () => {
-                await deletePreset(editing.id)
-                setEditing(null)
-              }}
-              className="min-h-[44px] w-full rounded-card py-3 text-sm font-medium text-expense"
+              onClick={handleDelete}
+              disabled={saving}
+              className="min-h-[44px] w-full rounded-card py-3 text-sm font-medium text-expense disabled:opacity-60"
             >
-              Delete preset
+              {confirmingDelete ? 'Tap again to confirm' : 'Delete preset'}
             </button>
           )}
         </div>

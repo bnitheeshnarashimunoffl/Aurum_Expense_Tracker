@@ -13,16 +13,21 @@ interface DonutChartProps {
   title: string
   slices: DonutSlice[]
   emptyLabel?: string
+  loading?: boolean
 }
 
-export default function DonutChart({ title, slices, emptyLabel = 'No data yet' }: DonutChartProps) {
+export default function DonutChart({ title, slices, emptyLabel = 'No data yet', loading = false }: DonutChartProps) {
   const total = slices.reduce((sum, s) => sum + s.value, 0)
   const nonZero = slices.filter((s) => s.value > 0)
 
   return (
     <div className="neu-raised rounded-card p-4">
       <h3 className="font-display mb-2 text-sm font-medium text-primary">{title}</h3>
-      {nonZero.length === 0 ? (
+      {loading ? (
+        <div className="flex h-40 items-center justify-center" role="status" aria-label="Loading chart">
+          <div className="skeleton h-28 w-28 rounded-full" />
+        </div>
+      ) : nonZero.length === 0 ? (
         <div className="flex h-40 items-center justify-center text-sm text-muted">{emptyLabel}</div>
       ) : (
         <>

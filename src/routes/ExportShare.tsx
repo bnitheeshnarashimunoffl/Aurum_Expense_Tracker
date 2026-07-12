@@ -5,27 +5,49 @@ import { useTransactions } from '@/hooks/useTransactions'
 import { supabase } from '@/lib/supabase'
 import { exportReportToPdf } from '@/lib/pdf'
 import ExportReport, { type ReportTransaction } from '@/reports/ExportReport'
+import Segmented from '@/components/Segmented'
+import Toast from '@/components/Toast'
+import { useToast } from '@/hooks/useToast'
 import { formatDate, startOfMonthISO, startOfWeekISO, todayISO } from '@/lib/format'
 import type { Scope } from '@/lib/types'
 
 type Range = 'week' | 'month' | 'custom'
 type ReportScope = 'income' | 'expense' | 'both'
 
+/** Wait for every <img> in the container (receipt photos on signed URLs) to finish
+ *  loading before html2canvas snapshots it — otherwise receipts render blank. */
+async function waitForImages(container: HTMLElement, timeoutMs = 10000) {
+  const images = Array.from(container.querySelectorAll('img'))
+  const pending = images
+    .filter((img) => !img.complete)
+    .map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          img.onload = () => resolve()
+          img.onerror = () => resolve()
+        })
+    )
+  if (pending.length === 0) return
+  await Promise.race([Promise.all(pending), new Promise((resolve) => setTimeout(resolve, timeoutMs))])
+}
+
 export default function ExportShare() {
   const [params] = useSearchParams()
   const initialRange = (params.get('range') as Range) || 'month'
 
-  const [range, setRange] = useState<Range>(initialRange)
+  const [range, setRange] = useState<Range>(['week', 'month', 'custom'].includes(initialRange) ? initialRange : 'month')
   const [customFrom, setCustomFrom] = useState(startOfMonthISO())
   const [customTo, setCustomTo] = useState(todayISO())
   const [reportScope, setReportScope] = useState<ReportScope>('both')
   const [scope, setScope] = useState<Scope>('all')
   const [generating, setGenerating] = useState(false)
+  const { message, showToast } = useToast()
 
   const { categories } = useCategories()
 
   const from = range === 'week' ? startOfWeekISO() : range === 'month' ? startOfMonthISO() : customFrom
   const to = range === 'custom' ? customTo : todayISO()
+  const customRangeInvalid = range === 'custom' && Boolean(customFrom && customTo) && customFrom > customTo
 
   const { transactions } = useTransactions({
     from,
@@ -39,8 +61,13 @@ export default function ExportShare() {
   const filterLabel = scope === 'all' ? 'All' : scope === 'personal' ? 'Personal only' : 'Business only'
 
   async function handleGenerate() {
+    if (customRangeInvalid) return
     setGenerating(true)
+    let container: HTMLDivElement | null = null
+    let root: import('react-dom/client').Root | null = null
     try {
+      // Resolve every receipt's signed URL BEFORE rendering the report, so the
+      // snapshot never fires against unresolved placeholders.
       const withReceipts: ReportTransaction[] = await Promise.all(
         transactions.map(async (t) => {
           if (!t.receipt_url) return t
@@ -50,16 +77,16 @@ export default function ExportShare() {
       )
 
       // Render into a detached container so html2canvas can snapshot the resolved report.
-      const container = document.createElement('div')
+      container = document.createElement('div')
       container.style.position = 'fixed'
       container.style.left = '-9999px'
       container.style.top = '0'
       document.body.appendChild(container)
 
       const { createRoot } = await import('react-dom/client')
-      const root = createRoot(container)
+      root = createRoot(container)
       await new Promise<void>((resolve) => {
-        root.render(
+        root!.render(
           <ExportReport
             rangeLabel={rangeLabel}
             scope={reportScope}
@@ -72,12 +99,18 @@ export default function ExportShare() {
         requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
       })
 
+      await waitForImages(container)
+
       const filename = `${reportScope}-${range}-${todayISO()}.pdf`
       await exportReportToPdf(container.firstElementChild as HTMLElement, filename)
-
-      root.unmount()
-      document.body.removeChild(container)
+    } catch (err) {
+      // User dismissing the share sheet is a normal outcome, not an error.
+      if (!(err instanceof DOMException && err.name === 'AbortError')) {
+        showToast("Couldn't generate the PDF — try again.", 3000)
+      }
     } finally {
+      root?.unmount()
+      if (container) document.body.removeChild(container)
       setGenerating(false)
     }
   }
@@ -88,72 +121,69 @@ export default function ExportShare() {
 
       <section className="mb-5">
         <p className="mb-2 text-sm text-muted">Range</p>
-        <div className="flex gap-2">
-          {(['week', 'month', 'custom'] as Range[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={`min-h-[40px] flex-1 rounded-full text-xs font-medium capitalize ${
-                range === r ? 'bg-accent' : 'neu-raised text-muted'
-              }`}
-              style={range === r ? { color: '#0B0D10' } : undefined}
-            >
-              {r === 'week' ? 'This week' : r === 'month' ? 'This month' : 'Custom'}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          ariaLabel="Range"
+          value={range}
+          onChange={setRange}
+          options={[
+            { value: 'week', label: 'This week' },
+            { value: 'month', label: 'This month' },
+            { value: 'custom', label: 'Custom' },
+          ]}
+        />
         {range === 'custom' && (
-          <div className="mt-2 flex gap-2">
-            <input
-              type="date"
-              value={customFrom}
-              onChange={(e) => setCustomFrom(e.target.value)}
-              className="neu-pressed min-h-[40px] flex-1 rounded-card border-none bg-surface px-3 text-xs text-primary outline-none"
-            />
-            <input
-              type="date"
-              value={customTo}
-              onChange={(e) => setCustomTo(e.target.value)}
-              className="neu-pressed min-h-[40px] flex-1 rounded-card border-none bg-surface px-3 text-xs text-primary outline-none"
-            />
-          </div>
+          <>
+            <div className="mt-2 flex gap-2">
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                aria-label="From date"
+                className="neu-pressed min-h-[40px] flex-1 rounded-card border-none bg-surface px-3 text-xs text-primary outline-none"
+              />
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                aria-label="To date"
+                className="neu-pressed min-h-[40px] flex-1 rounded-card border-none bg-surface px-3 text-xs text-primary outline-none"
+              />
+            </div>
+            {customRangeInvalid && (
+              <p role="alert" className="mt-2 text-xs text-expense">
+                The start date is after the end date.
+              </p>
+            )}
+          </>
         )}
       </section>
 
       <section className="mb-5">
         <p className="mb-2 text-sm text-muted">Report type</p>
-        <div className="flex gap-2">
-          {(['income', 'expense', 'both'] as ReportScope[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setReportScope(s)}
-              className={`min-h-[40px] flex-1 rounded-full text-xs font-medium capitalize ${
-                reportScope === s ? 'bg-accent' : 'neu-raised text-muted'
-              }`}
-              style={reportScope === s ? { color: '#0B0D10' } : undefined}
-            >
-              {s === 'both' ? 'Both combined' : `${s} only`}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          ariaLabel="Report type"
+          value={reportScope}
+          onChange={setReportScope}
+          options={[
+            { value: 'income', label: 'Income only' },
+            { value: 'expense', label: 'Expense only' },
+            { value: 'both', label: 'Both combined' },
+          ]}
+        />
       </section>
 
       <section className="mb-6">
         <p className="mb-2 text-sm text-muted">Filter</p>
-        <div className="flex gap-2">
-          {(['all', 'personal', 'business'] as Scope[]).map((s) => (
-            <button
-              key={s}
-              onClick={() => setScope(s)}
-              className={`min-h-[40px] flex-1 rounded-full text-xs font-medium capitalize ${
-                scope === s ? 'bg-accent' : 'neu-raised text-muted'
-              }`}
-              style={scope === s ? { color: '#0B0D10' } : undefined}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          ariaLabel="Scope filter"
+          value={scope}
+          onChange={setScope}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'personal', label: 'Personal' },
+            { value: 'business', label: 'Business' },
+          ]}
+        />
       </section>
 
       <p className="mb-4 text-xs text-muted">
@@ -162,12 +192,13 @@ export default function ExportShare() {
 
       <button
         onClick={handleGenerate}
-        disabled={generating}
-        className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3.5 font-medium disabled:opacity-60"
-        style={{ color: '#0B0D10' }}
+        disabled={generating || customRangeInvalid}
+        className="neu-raised min-h-[44px] w-full rounded-card bg-accent py-3.5 font-medium text-ink disabled:opacity-60"
       >
         {generating ? 'Generating…' : 'Generate & share PDF'}
       </button>
+
+      <Toast message={message} />
     </div>
   )
 }

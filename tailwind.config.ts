@@ -12,6 +12,8 @@ export default {
         expense: 'var(--expense)',
         primary: 'var(--text-primary)',
         muted: 'var(--text-muted)',
+        // Text/icons sitting ON a brass accent fill — matches the base background.
+        ink: '#0B0D10',
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'sans-serif'],

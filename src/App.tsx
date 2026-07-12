@@ -7,6 +7,7 @@ import Login from '@/routes/Login'
 import Signup from '@/routes/Signup'
 import ForgotPassword from '@/routes/ForgotPassword'
 import Dashboard from '@/routes/Dashboard'
+import LoadingRing from '@/components/LoadingRing'
 
 // Code-split screens that pull in heavier libraries (Recharts, html2pdf) so the
 // first paint on a phone doesn't pay for report/export tooling upfront.
@@ -17,7 +18,7 @@ const Settings = lazy(() => import('@/routes/Settings'))
 const ExportShare = lazy(() => import('@/routes/ExportShare'))
 
 function RouteFallback() {
-  return <div className="flex h-40 items-center justify-center text-sm text-muted">Loading…</div>
+  return <LoadingRing />
 }
 
 export default function App() {
