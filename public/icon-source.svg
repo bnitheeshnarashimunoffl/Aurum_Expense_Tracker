@@ -1,0 +1,43 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="disc" cx="42%" cy="38%" r="75%">
+      <stop offset="0%" stop-color="#1a1e23" />
+      <stop offset="55%" stop-color="#101318" />
+      <stop offset="100%" stop-color="#07080a" />
+    </radialGradient>
+    <linearGradient id="shadowTop" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.55" />
+      <stop offset="45%" stop-color="#000000" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="highlightBottom" x1="100%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.05" />
+      <stop offset="45%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+    <clipPath id="discClip">
+      <circle cx="512" cy="512" r="300" />
+    </clipPath>
+  </defs>
+
+  <!-- Full-bleed graphite square, no corner radius, no alpha: iOS applies its own mask. -->
+  <rect x="0" y="0" width="1024" height="1024" fill="#0B0D10" />
+
+  <!-- Pressed-in circular disc (neumorphic inset), the Balance Dial motif at icon scale. -->
+  <circle cx="512" cy="512" r="300" fill="url(#disc)" />
+  <g clip-path="url(#discClip)">
+    <rect x="212" y="212" width="600" height="600" fill="url(#shadowTop)" />
+    <rect x="212" y="212" width="600" height="600" fill="url(#highlightBottom)" />
+  </g>
+
+  <!-- Thin brass ring arc, echoing the dashboard's budget-progress ring. -->
+  <circle
+    cx="512"
+    cy="512"
+    r="256"
+    fill="none"
+    stroke="#C9A46A"
+    stroke-width="16"
+    stroke-linecap="round"
+    stroke-dasharray="1275 1608"
+    transform="rotate(-90 512 512)"
+  />
+</svg>

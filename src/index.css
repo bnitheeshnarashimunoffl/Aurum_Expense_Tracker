@@ -1,0 +1,86 @@
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #0b0d10;
+  --bg-surface: #14171b;
+  --accent: #c9a46a;
+  --income: #8faf8b;
+  --expense: #c97c5d;
+  --text-primary: #edede9;
+  --text-muted: #8a8f98;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  overscroll-behavior-y: none;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Component-layer so a utility like bg-accent (e.g. on a primary button) always wins
+   over the default surface background below — Tailwind orders `components` before
+   `utilities` regardless of source order in this file. */
+@layer components {
+  /* Neumorphic: data at rest (transaction cards, category tiles, balance dial, budget bars) */
+  .neu-raised {
+    background: var(--bg-surface);
+    box-shadow: 8px 8px 16px rgba(0, 0, 0, 0.55), -6px -6px 14px rgba(255, 255, 255, 0.03);
+  }
+
+  .neu-pressed {
+    background: var(--bg-surface);
+    box-shadow: inset 6px 6px 12px rgba(0, 0, 0, 0.5), inset -4px -4px 10px rgba(255, 255, 255, 0.03);
+  }
+
+  /* Glassmorphic: floating / in-progress surfaces (bottom sheets, modals, toasts, preset tray) */
+  .glass {
+    background: rgba(20, 23, 27, 0.65);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
