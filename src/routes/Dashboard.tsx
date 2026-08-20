@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import BalanceDial from '@/components/BalanceDial'
+import SwipeableBalanceDial from '@/components/SwipeableBalanceDial'
 import DonutChart, { type DonutSlice } from '@/components/DonutChart'
 import TransactionRow from '@/components/TransactionRow'
 import Segmented from '@/components/Segmented'
@@ -8,6 +8,7 @@ import { SkeletonRows } from '@/components/Skeleton'
 import { useCategories } from '@/hooks/useCategories'
 import { useTransactions } from '@/hooks/useTransactions'
 import { useBudgets } from '@/hooks/useBudgets'
+import { useAllTimeBalance } from '@/hooks/useAllTimeBalance'
 import { startOfMonthISO, startOfWeekISO, todayISO } from '@/lib/format'
 import type { Scope, Period, Transaction } from '@/lib/types'
 import TransactionDetailSheet from '@/components/TransactionDetailSheet'
@@ -43,6 +44,10 @@ export default function Dashboard() {
   })
 
   const { budgets } = useBudgets()
+
+  // All-time net balance for the "Total remaining" page of the dial — scoped the
+  // same way as everything else on this screen, but with no date filter.
+  const { income: totalIncome, expense: totalExpense, net: totalNet, loading: totalLoading } = useAllTimeBalance(scope)
 
   const monthIncome = monthTransactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
   const monthExpense = monthTransactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
@@ -95,11 +100,15 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <BalanceDial
-        netBalance={netBalance}
-        budgetUsedPct={budgetUsedPct}
+      <SwipeableBalanceDial
+        monthNet={netBalance}
+        monthBudgetPct={budgetUsedPct}
         hasBudget={totalBudget > 0}
-        loading={monthLoading}
+        monthLoading={monthLoading}
+        totalNet={totalNet}
+        totalIncome={totalIncome}
+        totalExpense={totalExpense}
+        totalLoading={totalLoading}
       />
 
       <div className="mt-6 flex gap-3">

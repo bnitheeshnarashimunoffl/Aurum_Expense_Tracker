@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react'
 import { formatCurrency } from '@/lib/format'
 
+interface DialRing {
+  /** 0+, portion of "capacity" consumed for this view (budget %, or lifetime burn %). */
+  pct: number
+  over: boolean
+}
+
 interface BalanceDialProps {
+  label: string
   netBalance: number
-  budgetUsedPct: number // 0+, share of total monthly budget consumed (may exceed 100)
-  hasBudget: boolean
+  /** Omit to show the track only, no progress arc — used when there's nothing to measure against. */
+  ring?: DialRing
+  caption: string
+  captionTone?: 'muted' | 'expense'
   loading?: boolean
 }
 
@@ -13,11 +22,15 @@ const STROKE = 6
 const RADIUS = (SIZE - STROKE) / 2
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
-/** Dashboard's one bold element: pressed neumorphic disc + animated brass progress ring. */
-export default function BalanceDial({ netBalance, budgetUsedPct, hasBudget, loading = false }: BalanceDialProps) {
+/**
+ * Dashboard's one bold element: pressed neumorphic disc + animated brass progress
+ * ring. Purely presentational — the label/ring/caption are supplied by the caller
+ * so the same disc can render either the "This month" or "Total remaining" page
+ * of the swipeable dial.
+ */
+export default function BalanceDial({ label, netBalance, ring, caption, captionTone = 'muted', loading = false }: BalanceDialProps) {
   const [animatedPct, setAnimatedPct] = useState(0)
-  const clamped = Math.min(100, Math.max(0, budgetUsedPct))
-  const over = hasBudget && budgetUsedPct > 100
+  const clamped = ring ? Math.min(100, Math.max(0, ring.pct)) : 0
 
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -31,12 +44,6 @@ export default function BalanceDial({ netBalance, budgetUsedPct, hasBudget, load
 
   const offset = CIRCUMFERENCE * (1 - animatedPct / 100)
 
-  const caption = !hasBudget
-    ? 'No budgets set yet'
-    : over
-      ? `Over budget · ${Math.round(budgetUsedPct)}%`
-      : `${Math.round(budgetUsedPct)}% of budget used`
-
   return (
     <div className="relative mx-auto flex items-center justify-center" style={{ width: SIZE, height: SIZE }}>
       <svg width={SIZE} height={SIZE} className="absolute -rotate-90">
@@ -48,13 +55,13 @@ export default function BalanceDial({ netBalance, budgetUsedPct, hasBudget, load
           stroke="rgba(255,255,255,0.06)"
           strokeWidth={STROKE}
         />
-        {hasBudget && (
+        {ring && (
           <circle
             cx={SIZE / 2}
             cy={SIZE / 2}
             r={RADIUS}
             fill="none"
-            stroke={over ? 'var(--expense)' : 'var(--accent)'}
+            stroke={ring.over ? 'var(--expense)' : 'var(--accent)'}
             strokeWidth={STROKE}
             strokeLinecap="round"
             strokeDasharray={CIRCUMFERENCE}
@@ -69,13 +76,13 @@ export default function BalanceDial({ netBalance, budgetUsedPct, hasBudget, load
       >
         {loading ? (
           <>
-            <span className="text-xs uppercase tracking-wide text-muted">This month</span>
+            <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
             <span className="skeleton mt-2 h-9 w-32 rounded-full" aria-label="Loading balance" />
             <span className="skeleton mt-2 h-3 w-24 rounded-full" />
           </>
         ) : (
           <>
-            <span className="text-xs uppercase tracking-wide text-muted">This month</span>
+            <span className="text-xs uppercase tracking-wide text-muted">{label}</span>
             <span
               className={`font-display tabular-nums mt-1 text-4xl font-bold ${
                 netBalance < 0 ? 'text-expense' : 'text-primary'
@@ -83,7 +90,9 @@ export default function BalanceDial({ netBalance, budgetUsedPct, hasBudget, load
             >
               {formatCurrency(netBalance)}
             </span>
-            <span className={`mt-1 text-xs ${over ? 'text-expense' : 'text-muted'}`}>{caption}</span>
+            <span className={`mt-1 px-6 text-xs ${captionTone === 'expense' ? 'text-expense' : 'text-muted'}`}>
+              {caption}
+            </span>
           </>
         )}
       </div>
