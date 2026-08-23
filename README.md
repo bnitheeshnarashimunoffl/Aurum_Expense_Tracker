@@ -1,9 +1,26 @@
 # Aurum
 
+> **Live Demo:** The app is currently deployed on Vercel. However, since it is locked behind a login screen and the link is not yet ready for public use, I have attached screenshots below to showcase the interface and features.
+
 A personal & business finance tracker, built as an installable phone-first PWA
 for tracking college income and expenses — allowance, freelance/business
 income, and day-to-day spending — in one place, split by personal vs.
 business, with budgets, receipts, and shareable PDF reports.
+
+## Screenshots
+
+*Since the live app is currently restricted, here are some photos demonstrating the interface:*
+
+<details>
+<summary>Click to view screenshots</summary>
+
+![Dashboard](./public/screenshots/dashboard.png)
+![Activity](./public/screenshots/activity.png)
+![Add Transaction](./public/screenshots/add_transaction.png)
+![Budgets](./public/screenshots/budgets.png)
+![Settings](./public/screenshots/settings.png)
+
+</details>
 
 ## Features
 
