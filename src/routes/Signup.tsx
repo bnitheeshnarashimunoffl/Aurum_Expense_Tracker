@@ -35,7 +35,7 @@ export default function Signup() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-6 py-safe-top">
       <div className="w-full max-w-sm">
-        <h1 className="font-display mb-1 text-3xl font-bold text-primary">Aurum</h1>
+        <h1 className="font-display mb-1 text-3xl font-bold text-primary">Meridian</h1>
         <p className="mb-8 text-sm text-muted">Create your account.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,8 +1,10 @@
-// Cross-instance cache invalidation. Every screen mounts its own copy of the data
-// hooks, so a mutation made in one place (e.g. the Add Transaction sheet) has to
-// tell every other live hook instance to refetch — otherwise the Dashboard keeps
-// showing stale numbers until a full reload.
-type Table = 'transactions' | 'categories' | 'quick_add_presets' | 'budgets'
+// Cross-instance cache invalidation, shared by every Meridian module. Every screen
+// mounts its own copy of the data hooks, so a mutation made in one place (e.g. the
+// Add Transaction sheet) has to tell every other live hook instance to refetch —
+// otherwise the Dashboard keeps showing stale numbers until a full reload. Keyed by
+// table name as a plain string so each module can subscribe/notify its own tables
+// without this file needing to know about them.
+type Table = string
 
 const listeners = new Map<Table, Set<() => void>>()
 

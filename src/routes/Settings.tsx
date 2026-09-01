@@ -132,7 +132,7 @@ export default function Settings() {
       </section>
 
       <section className="mb-6">
-        <Link to="/presets" className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary">
+        <Link to="/aurum/presets" className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary">
           Manage quick-add presets
         </Link>
       </section>
@@ -145,7 +145,7 @@ export default function Settings() {
         >
           Export all transactions to CSV
         </button>
-        <Link to="/export" className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary">
+        <Link to="/aurum/export" className="neu-raised block min-h-[44px] w-full rounded-card px-4 py-3 text-sm text-primary">
           Export & Share PDF report
         </Link>
       </section>

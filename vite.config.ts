@@ -9,13 +9,13 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon-180.png'],
       manifest: {
-        name: 'Aurum — Finance Tracker',
-        short_name: 'Aurum',
-        description: 'Personal & business finance tracker for college life.',
+        name: 'Meridian',
+        short_name: 'Meridian',
+        description: 'Meridian — a personal app shell, starting with the Aurum finance tracker.',
         start_url: '/',
         display: 'standalone',
         background_color: '#0B0D10',
-        theme_color: '#0B0D10',
+        theme_color: '#C9A46A',
         icons: [
           {
             src: '/icons/pwa-192.png',

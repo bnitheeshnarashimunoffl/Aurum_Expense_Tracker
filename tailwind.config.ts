@@ -14,6 +14,12 @@ export default {
         muted: 'var(--text-muted)',
         // Text/icons sitting ON a brass accent fill — matches the base background.
         ink: '#0B0D10',
+
+        // Kindle module palette — dark blue/purple base + shared gold accent.
+        kindleBase: 'var(--kindle-bg-base)',
+        kindleSurface: 'var(--kindle-bg-surface)',
+        kindlePurple: 'var(--kindle-purple)',
+        kindleComplete: 'var(--kindle-complete)',
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'sans-serif'],

@@ -23,7 +23,7 @@ function NavIcon({ children }: { children: ReactNode }) {
 
 const NAV_ITEMS = [
   {
-    to: '/',
+    to: '/aurum',
     label: 'Home',
     icon: (
       <NavIcon>
@@ -32,7 +32,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: '/transactions',
+    to: '/aurum/transactions',
     label: 'Activity',
     icon: (
       <NavIcon>
@@ -43,7 +43,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: '/budgets',
+    to: '/aurum/budgets',
     label: 'Budgets',
     icon: (
       <NavIcon>
@@ -53,7 +53,7 @@ const NAV_ITEMS = [
     ),
   },
   {
-    to: '/settings',
+    to: '/aurum/settings',
     label: 'Settings',
     icon: (
       <NavIcon>
@@ -71,7 +71,7 @@ export default function BottomNav({ onAddClick }: { onAddClick: () => void }) {
     <NavLink
       key={item.to}
       to={item.to}
-      end={item.to === '/'}
+      end={item.to === '/aurum'}
       className={({ isActive }) =>
         `flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-3 pb-2 text-[11px] ${
           isActive ? 'text-accent' : 'text-muted'

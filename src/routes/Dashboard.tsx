@@ -95,7 +95,7 @@ export default function Dashboard() {
     <div className="px-4 pt-4">
       <div className="mb-2 flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-primary">Aurum</h1>
-        <Link to="/export?range=week" className="text-xs font-medium text-accent">
+        <Link to="/aurum/export?range=week" className="text-xs font-medium text-accent">
           Share this week
         </Link>
       </div>

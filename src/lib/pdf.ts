@@ -5,14 +5,18 @@ import html2pdf from 'html2pdf.js'
  * Web Share API (files) when available — this is what opens the iOS share sheet — or
  * falls back to a plain download link.
  */
-export async function exportReportToPdf(element: HTMLElement, filename: string): Promise<void> {
+export async function exportReportToPdf(
+  element: HTMLElement,
+  filename: string,
+  options?: { orientation?: 'portrait' | 'landscape' }
+): Promise<void> {
   const worker = html2pdf()
     .set({
       margin: 0,
       filename,
       image: { type: 'jpeg', quality: 0.92 },
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+      jsPDF: { unit: 'pt', format: 'a4', orientation: options?.orientation ?? 'portrait' },
     })
     .from(element)
 

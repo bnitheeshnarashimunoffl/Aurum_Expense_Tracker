@@ -13,31 +13,38 @@
       <stop offset="0%" stop-color="#ffffff" stop-opacity="0.05" />
       <stop offset="45%" stop-color="#ffffff" stop-opacity="0" />
     </linearGradient>
+    <radialGradient id="sunGlow" cx="50%" cy="100%" r="85%">
+      <stop offset="0%" stop-color="#C9A46A" stop-opacity="0.35" />
+      <stop offset="100%" stop-color="#C9A46A" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="sunFill" cx="42%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#F1D9AA" />
+      <stop offset="100%" stop-color="#C9A46A" />
+    </radialGradient>
     <clipPath id="discClip">
       <circle cx="512" cy="512" r="300" />
+    </clipPath>
+    <clipPath id="skyClip">
+      <rect x="212" y="212" width="600" height="348" />
     </clipPath>
   </defs>
 
   <!-- Full-bleed graphite square, no corner radius, no alpha: iOS applies its own mask. -->
   <rect x="0" y="0" width="1024" height="1024" fill="#0B0D10" />
 
-  <!-- Pressed-in circular disc (neumorphic inset), the Balance Dial motif at icon scale. -->
+  <!-- Pressed-in circular disc (neumorphic inset), same container language as the original mark. -->
   <circle cx="512" cy="512" r="300" fill="url(#disc)" />
   <g clip-path="url(#discClip)">
     <rect x="212" y="212" width="600" height="600" fill="url(#shadowTop)" />
     <rect x="212" y="212" width="600" height="600" fill="url(#highlightBottom)" />
-  </g>
 
-  <!-- Thin brass ring arc, echoing the dashboard's budget-progress ring. -->
-  <circle
-    cx="512"
-    cy="512"
-    r="256"
-    fill="none"
-    stroke="#C9A46A"
-    stroke-width="16"
-    stroke-linecap="round"
-    stroke-dasharray="1275 1608"
-    transform="rotate(-90 512 512)"
-  />
+    <!-- Sun, clipped by the horizon line — the same "sets behind the line" silhouette used by the in-app sun-exit gesture. -->
+    <g clip-path="url(#skyClip)">
+      <rect x="212" y="212" width="600" height="348" fill="url(#sunGlow)" />
+      <circle cx="512" cy="560" r="200" fill="url(#sunFill)" />
+    </g>
+
+    <!-- Horizon line. -->
+    <rect x="212" y="558" width="600" height="4" fill="#C9A46A" />
+  </g>
 </svg>
