@@ -36,6 +36,14 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Loom is offline-first, so the app SHELL has to load with no network too —
+        // not just its data. These are client-side routes with no file of their own,
+        // so every navigation falls back to the precached index.html, which then
+        // boots the router and reads Loom's data straight out of IndexedDB.
+        navigateFallback: 'index.html',
+        // Supabase calls must still go to the network (and fail normally when it is
+        // gone) rather than being answered with the HTML shell.
+        navigateFallbackDenylist: [/^\/rest\//, /^\/auth\//, /^\/storage\//],
         // Cache-first for viewing already-loaded data offline (nice-to-have, not core to MVP).
         runtimeCaching: [
           {

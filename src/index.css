@@ -3,6 +3,11 @@
 @import '@fontsource/inter/400.css';
 @import '@fontsource/inter/500.css';
 @import '@fontsource/inter/600.css';
+/* Virtus's display face — Cinzel is drawn from Roman inscriptional capitals, which
+   is the classical register that module asks for. Headings and the wordmark only;
+   all data and UI labels stay on Inter, which is far more legible mid-set. */
+@import '@fontsource/cinzel/500.css';
+@import '@fontsource/cinzel/600.css';
 
 @tailwind base;
 @tailwind components;
@@ -24,6 +29,72 @@
   --kindle-purple: #3b2b5c;
   --kindle-complete: #6fa787;
   --kindle-reflection: rgba(111, 167, 135, 0.22);
+
+  /* Vigil module — the one LIGHT surface in Meridian: warm beige page, cream
+     surface, bronze/gold accents, near-black warm ink. Deliberately the inverse
+     of Kindle's dark blue/purple so the two never read as the same screen, while
+     the gold keeps both inside the Meridian family. */
+  --vigil-bg-base: #e7dcc7;
+  --vigil-bg-surface: #f3ead9;
+  --vigil-gold: #bc8a3f;
+  --vigil-gold-soft: #d9b478;
+  --vigil-bronze: #553c19;
+  --vigil-ink: #2e2823;
+  --vigil-ink-soft: #6e6353;
+  --vigil-line: #d8cbb2;
+  /* The two neumorphic light sources, kept as tokens so every raised/pressed
+     surface in the module casts exactly the same pair. */
+  --vigil-shadow-dark: rgba(176, 152, 112, 0.5);
+  --vigil-shadow-light: rgba(255, 253, 247, 0.95);
+
+  /* Loom module — gunmetal grey base with the shared Meridian gold and a deep
+     burgundy second accent. Cooler and greyer than Kindle's blue/purple, and the
+     dark counterweight to Vigil's cream. */
+  --loom-bg-base: #1e2227;
+  --loom-bg-surface: #272c33;
+  --loom-gold: #c9a46a;
+  --loom-burgundy: #7d2a41;
+  --loom-burgundy-soft: #a4405c;
+  --loom-ink: #e8e6e1;
+  --loom-muted: #8b9098;
+  --loom-line: #363c45;
+  --loom-shadow-dark: rgba(9, 11, 14, 0.62);
+  --loom-shadow-light: rgba(126, 138, 155, 0.09);
+
+  /* Virtus module — warm off-white marble with bronze and an ember red, the
+     classical-Roman register. The second LIGHT surface in Meridian after Vigil,
+     and deliberately cooler and paler than Vigil's beige so the two never read as
+     the same screen: Vigil is cream-on-gold, Virtus is marble-on-bronze. */
+  --marble-base: #f2ede4;
+  --marble-surface: #f8f5ef;
+  --marble-shadow: #e4dccc;
+  --marble-highlight: #ffffff;
+  --bronze-primary: #a8763e;
+  --bronze-deep: #7a5427;
+  --ember-red: #a83232;
+  --ink-charcoal: #2b2620;
+  --ink-soft: #6b6154;
+  --virtus-line: #ddd3c1;
+  /* The neumorphic light source, as one token pair like every other module. */
+  --virtus-shadow-dark: rgba(178, 160, 128, 0.5);
+  --virtus-shadow-light: rgba(255, 255, 255, 0.95);
+
+  /* Volume ramp — see src/virtus/lib/volume.ts for how a day maps onto it.
+     Magnitude is carried by LIGHTNESS (light = light day, dark = heavy day) with
+     hue running red -> bronze -> green as a redundant second channel. That is not
+     decoration: a plain red->green ramp put the two extremes at deuteranopic
+     dE 3.0 — a colourblind reader could not tell a best day from a worst one.
+     Stepping it on lightness takes the extremes to dE 25.9. Validated with the
+     dataviz skill's validate_palette.js against --marble-base. */
+  --virtus-vol-1: #d98e7f;
+  --virtus-vol-2: #c17755;
+  --virtus-vol-3: #9d6725;
+  --virtus-vol-4: #516720;
+  --virtus-vol-5: #1b5528;
+  /* Rest days sit OFF that ramp entirely — they are not a performance data point.
+     Colour alone is not enough (this stone lands at dE 4.5 from the ramp's light
+     end under deuteranopia), so a rest cell always also carries a dash glyph. */
+  --virtus-rest: #b2aba3;
 }
 
 * {
@@ -115,6 +186,138 @@ h3,
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(150, 150, 220, 0.1);
+  }
+
+  /* Vigil's neumorphic pair. Light-UI neumorphism needs both a warm cast shadow
+     and a near-white highlight to read as extruded — a single dark shadow (which
+     is all a dark theme needs) just looks like a drop shadow on cream. Every
+     raised surface in Vigil uses this exact pair at this exact offset; the two
+     smaller variants only shorten the offset, never change the light direction. */
+  .vigil-neu-raised {
+    background: var(--vigil-bg-surface);
+    box-shadow: 7px 7px 15px var(--vigil-shadow-dark), -7px -7px 15px var(--vigil-shadow-light);
+  }
+
+  .vigil-neu-raised-sm {
+    background: var(--vigil-bg-surface);
+    box-shadow: 4px 4px 9px var(--vigil-shadow-dark), -4px -4px 9px var(--vigil-shadow-light);
+  }
+
+  .vigil-neu-pressed {
+    background: var(--vigil-bg-surface);
+    box-shadow: inset 5px 5px 11px var(--vigil-shadow-dark), inset -5px -5px 11px var(--vigil-shadow-light);
+  }
+
+  .vigil-neu-pressed-sm {
+    background: var(--vigil-bg-surface);
+    box-shadow: inset 3px 3px 6px var(--vigil-shadow-dark), inset -3px -3px 6px var(--vigil-shadow-light);
+  }
+
+  /* Floating surfaces (sheets, toasts, nav) — frosted cream rather than Kindle's
+     frosted navy, same blur so the two modules feel built from one material. */
+  .vigil-glass {
+    background: rgba(243, 234, 217, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 253, 247, 0.7);
+  }
+
+  /* Loom's neumorphic pair, tuned for gunmetal: a colder cast shadow than
+     Kindle's blue-black and a cool steel highlight, at the same offsets and radii
+     the other modules use so the depth reads identically across Meridian. */
+  .loom-neu-raised {
+    background: var(--loom-bg-surface);
+    box-shadow: 7px 7px 15px var(--loom-shadow-dark), -6px -6px 13px var(--loom-shadow-light);
+  }
+
+  .loom-neu-raised-sm {
+    background: var(--loom-bg-surface);
+    box-shadow: 4px 4px 9px var(--loom-shadow-dark), -3px -3px 8px var(--loom-shadow-light);
+  }
+
+  .loom-neu-pressed {
+    background: var(--loom-bg-surface);
+    box-shadow: inset 5px 5px 11px var(--loom-shadow-dark), inset -4px -4px 9px var(--loom-shadow-light);
+  }
+
+  .loom-neu-pressed-sm {
+    background: var(--loom-bg-surface);
+    box-shadow: inset 3px 3px 6px var(--loom-shadow-dark), inset -2px -2px 5px var(--loom-shadow-light);
+  }
+
+  .loom-glass {
+    background: rgba(39, 44, 51, 0.82);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(126, 138, 155, 0.14);
+  }
+
+  /* Loom is a dark surface, so the browser's own controls inside it — the date
+     pickers on the new-term sheet especially — have to render dark as well. Scoped
+     to Loom rather than :root because Vigil is a light module. */
+  .loom-root {
+    color-scheme: dark;
+  }
+
+  /* The native colour input paints its own square, bordered swatch, which reads as
+     a stray rectangle beside the rounded preset swatches. Round it to match. */
+  .loom-color-input {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    padding: 0;
+    background: transparent;
+  }
+
+  .loom-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+
+  .loom-color-input::-webkit-color-swatch {
+    border: 1px solid var(--loom-line);
+    border-radius: 10px;
+  }
+
+  /* Virtus's neumorphic pair. Light-UI neumorphism needs a warm cast shadow plus a
+     near-white highlight to read as extruded, the same construction Vigil uses —
+     but tuned to marble rather than beige, so the cast shadow is greyer and the
+     highlight is pure white rather than cream. Offsets and radii match every other
+     module so the depth reads identically across Meridian. */
+  .virtus-neu-raised {
+    background: var(--marble-surface);
+    box-shadow: 7px 7px 15px var(--virtus-shadow-dark), -7px -7px 15px var(--virtus-shadow-light);
+  }
+
+  .virtus-neu-raised-sm {
+    background: var(--marble-surface);
+    box-shadow: 4px 4px 9px var(--virtus-shadow-dark), -4px -4px 9px var(--virtus-shadow-light);
+  }
+
+  .virtus-neu-pressed {
+    background: var(--marble-surface);
+    box-shadow: inset 5px 5px 11px var(--virtus-shadow-dark), inset -5px -5px 11px var(--virtus-shadow-light);
+  }
+
+  .virtus-neu-pressed-sm {
+    background: var(--marble-surface);
+    box-shadow: inset 3px 3px 6px var(--virtus-shadow-dark), inset -3px -3px 6px var(--virtus-shadow-light);
+  }
+
+  .virtus-well {
+    background: #ece5d8;
+    box-shadow: inset 4px 4px 9px var(--virtus-shadow-dark), inset -3px -3px 7px var(--virtus-shadow-light);
+  }
+
+  .virtus-glass {
+    background: rgba(248, 245, 239, 0.86);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+  }
+
+  /* The inscriptional face, applied only where it is asked for. */
+  .font-inscribe {
+    font-family: 'Cinzel', Georgia, serif;
   }
 }
 

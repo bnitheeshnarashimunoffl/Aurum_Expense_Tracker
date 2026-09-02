@@ -2,6 +2,9 @@ import { Link } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import Horizon from '@/components/Horizon'
 import FlameIcon from '@/kindle/components/FlameIcon'
+import HourglassIcon from '@/vigil/components/HourglassIcon'
+import LoomIcon from '@/loom/components/LoomIcon'
+import LaurelIcon from '@/virtus/components/LaurelIcon'
 
 interface AppTile {
   id: string
@@ -36,6 +39,9 @@ function AurumTileIcon() {
 const APPS: AppTile[] = [
   { id: 'aurum', label: 'Aurum', to: '/aurum', icon: <AurumTileIcon /> },
   { id: 'kindle', label: 'Kindle', to: '/kindle', icon: <FlameIcon size={30} /> },
+  { id: 'vigil', label: 'Vigil', to: '/vigil', icon: <HourglassIcon size={30} /> },
+  { id: 'loom', label: 'Loom', to: '/loom', icon: <LoomIcon size={30} /> },
+  { id: 'virtus', label: 'Virtus', to: '/virtus', icon: <LaurelIcon size={30} /> },
 ]
 
 export default function Launcher() {
