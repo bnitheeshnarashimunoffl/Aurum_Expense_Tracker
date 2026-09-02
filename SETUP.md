@@ -160,3 +160,109 @@ end-to-end:
       fall back to a plain download instead)
 - [ ] Delete the test transactions and preset you just created so your real
       data starts clean
+
+---
+
+## 10. Chronicle (to-dos, notes, voice)
+
+Chronicle is the sixth Meridian module. It needs three things beyond the base
+setup: its tables, a storage bucket, and — for voice transcription only — a
+Groq API key held server-side in a Supabase Edge Function.
+
+Everything except transcription works without the Groq key. Recordings still
+save and play; they just arrive with an empty transcript you can type yourself.
+
+### 10.1 Storage bucket
+
+1. **Storage → New bucket**, name it exactly `chronicle`, leave it **Private**.
+2. Order doesn't matter. The SQL below adds this bucket's access policy, and that
+   policy names the bucket as a string (`bucket_id = 'chronicle'`) rather than
+   pointing at a row — so running the SQL first is fine, and the policy simply
+   starts applying once the bucket exists. Same as `receipts` in step 3.
+
+This one bucket holds both voice audio (`<your-user-id>/audio/…`) and images
+embedded in notes (`<your-user-id>/images/…`). The user-id prefix is what the
+policy keys off, so it is load-bearing, not just tidy.
+
+### 10.2 Tables
+
+**SQL Editor → New query**, paste all of `supabase/chronicle_schema.sql`, Run.
+It creates `chronicle_tags`, `chronicle_notes`, `chronicle_todos`,
+`chronicle_voice`, `chronicle_item_tags`, `chronicle_todo_links` and
+`chronicle_secret_pin`, turns on RLS for every one of them, installs the
+cleanup triggers, and adds the storage policy for the bucket above.
+
+### 10.3 Voice transcription (Groq Whisper)
+
+The key must never reach the browser — this is a PWA, so anything in the
+frontend bundle is public. The client uploads audio to Storage and calls an Edge
+Function; the function is the only thing that talks to Groq.
+
+1. **Get a key:** sign in at [console.groq.com](https://console.groq.com) →
+   **API Keys** → **Create API Key**. Copy it immediately; it is shown once.
+2. **Install the Supabase CLI** if you don't have it:
+   ```bash
+   npm install -g supabase
+   supabase login
+   supabase link --project-ref <your-project-ref>
+   ```
+   (`<your-project-ref>` is the `xxxxxxxx` in your `https://xxxxxxxx.supabase.co` URL.)
+3. **Set the key as a project secret** — deployed Edge Functions do *not* read
+   `.env.local`:
+   ```bash
+   supabase secrets set GROQ_API_KEY=your_key_here
+   ```
+   Or in the dashboard: **Edge Functions → Secrets → Add new secret**, name
+   `GROQ_API_KEY`.
+4. **Deploy the function:**
+   ```bash
+   supabase functions deploy transcribe-voice
+   ```
+
+The model is `whisper-large-v3-turbo`. On Groq's free tier that is 20 requests
+per minute, 2,000 per day, and 7,200 seconds of audio per hour — far more than
+personal use needs, and the limits reset rather than being a one-time credit
+pool.
+
+**If you skip this step**, transcription fails cleanly: the recording is saved
+and playable, the entry shows "Transcription failed" with the reason
+(`GROQ_API_KEY is not set on this Supabase project`), and there is a Retry
+button that works once the secret exists. Audio is never lost to a transcription
+failure — that is the one thing the table is shaped to make impossible.
+
+`GROQ_API_KEY` is also listed in `.env.local.example`, deliberately without a
+`VITE_` prefix so Vite cannot expose it to the browser. That copy is only used
+if you run `supabase functions serve` locally.
+
+### 10.4 Secret Notes
+
+There is no button for it. Type your Secret Notes PIN into Chronicle's search
+field and the section opens.
+
+To set one the first time, type **`secret`** into the search field — that word
+opens the setup screen, and only while no PIN exists. After that it is an
+ordinary search term again.
+
+This PIN is Chronicle's own; it is not the PIN Kindle, Vigil or Virtus use.
+Leaving the section, navigating away, or backgrounding the app re-locks it, and
+nothing about being unlocked is ever stored.
+
+Be clear-eyed about what it is: the PIN **hides** the section, it does not
+encrypt it. Row Level Security scopes those notes to your account, so anyone
+already signed in as you could reach them another way. It is a closed door, not
+a safe.
+
+### 10.5 Check it worked
+
+- [ ] Open **Chronicle** from the launcher (the quill icon)
+- [ ] Add a to-do, give it a due date and a repeat, tick it off, and confirm the
+      next occurrence appears while the completed one stays in **Completed**
+- [ ] Write a note with a heading and a checklist, close it, reopen it, and
+      confirm the checkboxes are still checkboxes
+- [ ] Record a voice memo and confirm it appears immediately and plays back,
+      then that a transcript arrives a few seconds later (or a clear failure
+      with a Retry button, if you skipped 10.3)
+- [ ] Search for a word that only appears inside a note body, and confirm the
+      note comes back with the match highlighted
+- [ ] Type `secret` into the search field, set a PIN, add a private note, lock
+      it, then confirm that note appears in neither the Notes list nor search

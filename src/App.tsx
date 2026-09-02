@@ -17,6 +17,8 @@ import LoomShell from '@/loom/components/LoomShell'
 import LoomTimetable from '@/loom/routes/Timetable'
 import VirtusShell from '@/virtus/components/VirtusShell'
 import VirtusHome from '@/virtus/routes/Home'
+import ChronicleShell from '@/chronicle/components/ChronicleShell'
+import ChronicleHome from '@/chronicle/routes/Home'
 
 // Code-split screens that pull in heavier libraries (Recharts, html2pdf) so the
 // first paint on a phone doesn't pay for report/export tooling upfront.
@@ -88,6 +90,14 @@ export default function App() {
                 <Route index element={<VirtusHome />} />
                 <Route path="train" element={<VirtusTrain />} />
                 <Route path="settings" element={<VirtusSettings />} />
+              </Route>
+
+              {/* Chronicle module — to-dos, notes and voice, sixth module in the shell.
+                  One route only: the three tabs are internal state, and the note editor
+                  and Secret Notes section are overlays rather than routes so a secret
+                  note never leaves an id in the URL or in history. */}
+              <Route path="chronicle" element={<ChronicleShell />}>
+                <Route index element={<ChronicleHome />} />
               </Route>
             </Route>
           </Routes>

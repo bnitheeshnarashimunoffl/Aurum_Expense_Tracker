@@ -5,6 +5,7 @@ import FlameIcon from '@/kindle/components/FlameIcon'
 import HourglassIcon from '@/vigil/components/HourglassIcon'
 import LoomIcon from '@/loom/components/LoomIcon'
 import LaurelIcon from '@/virtus/components/LaurelIcon'
+import QuillIcon from '@/chronicle/components/QuillIcon'
 
 interface AppTile {
   id: string
@@ -42,6 +43,7 @@ const APPS: AppTile[] = [
   { id: 'vigil', label: 'Vigil', to: '/vigil', icon: <HourglassIcon size={30} /> },
   { id: 'loom', label: 'Loom', to: '/loom', icon: <LoomIcon size={30} /> },
   { id: 'virtus', label: 'Virtus', to: '/virtus', icon: <LaurelIcon size={30} /> },
+  { id: 'chronicle', label: 'Chronicle', to: '/chronicle', icon: <QuillIcon size={30} /> },
 ]
 
 export default function Launcher() {

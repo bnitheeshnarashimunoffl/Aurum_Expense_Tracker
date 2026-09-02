@@ -8,6 +8,13 @@
    all data and UI labels stay on Inter, which is far more legible mid-set. */
 @import '@fontsource/cinzel/500.css';
 @import '@fontsource/cinzel/600.css';
+/* Chronicle's display face — Spectral is a text serif drawn for screens, which is
+   the register a record-keeping module wants: bookish without being ornamental,
+   and nothing like Cinzel's inscriptional capitals, so Virtus and Chronicle never
+   read as the same voice. Headings, note titles and the wordmark only. */
+@import '@fontsource/spectral/400.css';
+@import '@fontsource/spectral/500.css';
+@import '@fontsource/spectral/600.css';
 
 @tailwind base;
 @tailwind components;
@@ -95,6 +102,55 @@
      Colour alone is not enough (this stone lands at dE 4.5 from the ramp's light
      end under deuteranopia), so a rest cell always also carries a dash glyph. */
   --virtus-rest: #b2aba3;
+
+  /* Chronicle module — deep charcoal with dark teal surfaces, gold accent and
+     paper-ivory text. The first module in Meridian whose neumorphism is built on
+     a DARK ground with a genuine highlight: Kindle and Loom are dark but lean on
+     a cast shadow alone, Vigil and Virtus are light. Here the base sits exactly
+     between --charcoal-shadow and --charcoal-highlight, so a raised surface is
+     the same colour as the page and only the two shadows extrude it — which is
+     what real neumorphism is, and what a bordered card is not. */
+  --ink-charcoal-bg: #1c1f21;
+  --teal-deep: #12403f;
+  --teal-raised: #17514f;
+  --charcoal-shadow: #141618;
+  --charcoal-highlight: #262a2d;
+  --gold-primary: #c9a227;
+  --gold-muted: #8f7420;
+  --ivory: #f2ebdd;
+  --ivory-dim: #a9a398;
+  /* The same three colours again as bare RGB channels. Tailwind can only apply an
+     opacity modifier (text-ivory/70, bg-gold/30) to a colour it can splice an alpha
+     into, and it cannot do that with a plain var() — those classes are silently not
+     emitted at all, which is how the search highlight ended up falling through to the
+     browser's default yellow. The hex forms above stay because raw CSS and inline SVG
+     fills use them directly. */
+  --gold-primary-rgb: 201 162 39;
+  --ivory-rgb: 242 235 221;
+  --ivory-dim-rgb: 169 163 152;
+  /* Hairline separators. List rows in Chronicle are deliberately NOT individual
+     raised cards — twenty stacked shadows is noise, and it is the generic-card
+     look the brief rules out — so rows sit flush on the ground and a rule this
+     quiet (1.36:1) is all that divides them. */
+  --chr-rule: #313639;
+  --chr-rule-teal: #215b59;
+  /* Priority. Colour alone cannot rank three levels for a low-vision or
+     colourblind reader, so every priority mark also varies in LENGTH (see
+     PriorityMark.tsx) — colour is the redundant channel, not the only one.
+     Measured on --ink-charcoal-bg: gold 6.85:1, ivory-dim 6.61:1, low 3.73:1;
+     the last is a non-text marker, where 3:1 is the bar. */
+  --chr-priority-low: #7c776f;
+
+  /* Contrast rules this palette is bound by, all measured rather than eyeballed:
+       --ivory      on charcoal 13.97   on teal-deep 9.67   on teal-raised 7.61
+       --ivory-dim  on charcoal  6.61   on teal-deep 4.58   on teal-raised 3.60
+       --gold       on charcoal  6.85   on teal-deep 4.74   on teal-raised 3.73
+       --gold-muted on charcoal  3.70
+     Two of those fail AA for body text and are therefore load-bearing rules:
+     GOLD IS NEVER TEXT ON TEAL (3.73 — the "gold vibrating against teal" the
+     brief warns about), and --gold-muted is a fill/border tone only, never small
+     text. Gold as a FILL with charcoal ink on top is 6.85 and is the primary
+     button. On teal-raised, metadata uses --ivory, not --ivory-dim. */
 }
 
 * {
@@ -318,6 +374,308 @@ h3,
   /* The inscriptional face, applied only where it is asked for. */
   .font-inscribe {
     font-family: 'Cinzel', Georgia, serif;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Chronicle                                                              */
+  /* ---------------------------------------------------------------------- */
+
+  /* Chronicle is dark, and it is the module with the most native controls in it
+     (the due-date picker especially), so the browser has to render its own
+     widgets dark too. Scoped rather than :root because Vigil and Virtus are
+     light modules. */
+  .chronicle-root {
+    color-scheme: dark;
+  }
+
+  /* Search hits. Styled here rather than with utilities so that a mark can never
+     render as the browser's default black-on-yellow inside a dark page. */
+  .chronicle-root mark {
+    background: rgba(201, 162, 39, 0.3);
+    color: var(--ivory);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+
+  .chronicle-root ::selection {
+    background: rgba(201, 162, 39, 0.3);
+    color: var(--ivory);
+  }
+
+  /* Chronicle's neumorphic pair. Same offsets, radii and press behaviour as every
+     other module — the difference is only luminance. On a dark ground the
+     highlight has to be a real lighter grey (--charcoal-highlight) rather than
+     the 3%-white wash Aurum and Kindle use, otherwise nothing extrudes and the
+     result is a flat card with a drop shadow. */
+  .chr-neu-raised {
+    background: var(--ink-charcoal-bg);
+    box-shadow: 7px 7px 15px var(--charcoal-shadow), -7px -7px 15px var(--charcoal-highlight);
+  }
+
+  .chr-neu-raised-sm {
+    background: var(--ink-charcoal-bg);
+    box-shadow: 4px 4px 9px var(--charcoal-shadow), -4px -4px 9px var(--charcoal-highlight);
+  }
+
+  .chr-neu-pressed {
+    background: var(--ink-charcoal-bg);
+    box-shadow: inset 5px 5px 11px var(--charcoal-shadow), inset -5px -5px 11px var(--charcoal-highlight);
+  }
+
+  .chr-neu-pressed-sm {
+    background: var(--ink-charcoal-bg);
+    box-shadow: inset 3px 3px 6px var(--charcoal-shadow), inset -3px -3px 6px var(--charcoal-highlight);
+  }
+
+  /* The same construction re-tuned for the teal ground, so the Secret Notes
+     section and the active tab keep their depth instead of going flat the moment
+     the surface changes hue. */
+  .chr-neu-raised-teal {
+    background: var(--teal-raised);
+    /* Tighter and dimmer on the light side than the charcoal pair: a bright teal
+       highlight at a wide blur reads as a glow spilling out of the tab strip rather
+       than as a raised surface sitting inside it. */
+    box-shadow: 4px 4px 9px #0d2f2e, -3px -3px 7px rgba(32, 108, 104, 0.5);
+  }
+
+  .chr-neu-pressed-teal {
+    background: var(--teal-deep);
+    box-shadow: inset 4px 4px 9px #0d2f2e, inset -4px -4px 9px #1c605d;
+  }
+
+  /* Small controls — a 22px checkbox, a tag chip — do not get enough separation
+     from a dark ground out of the standard shadow pair alone: at that size the two
+     shadows overlap into mush and the control reads as a smudge. Both of these
+     therefore carry a surface a step lighter than the page as well. */
+  .chr-chip {
+    background: var(--charcoal-highlight);
+    box-shadow: 3px 3px 7px var(--charcoal-shadow), -3px -3px 7px #30353a;
+  }
+
+  .chr-check {
+    background: var(--charcoal-shadow);
+    box-shadow: inset 2px 2px 4px #0d0f10, inset -2px -2px 4px #2c3134;
+    border: 1px solid #383e42;
+  }
+
+  .chr-glass {
+    background: rgba(28, 31, 33, 0.86);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(242, 235, 221, 0.09);
+  }
+
+  .chr-glass-teal {
+    background: rgba(18, 64, 63, 0.9);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(242, 235, 221, 0.12);
+  }
+
+  /* The display face. Headings, note titles and the wordmark — never body copy,
+     which stays on Inter because that is what long transcripts are read in. */
+  .font-chronicle {
+    font-family: 'Spectral', Georgia, serif;
+  }
+
+  /* ---- Note body / transcript reading surface -------------------------- */
+  /* The longest-form reading anywhere in Meridian, so it gets the treatment the
+     brief asks for: a measure that caps out around 62 characters, 1.75 leading,
+     and a base size a point larger than the rest of the platform uses. */
+  .chr-prose {
+    font-size: 16.5px;
+    line-height: 1.75;
+    color: var(--ivory);
+    max-width: 62ch;
+  }
+
+  .chr-prose:focus {
+    outline: none;
+  }
+
+  .chr-prose > * + * {
+    margin-top: 0.85em;
+  }
+
+  .chr-prose h1,
+  .chr-prose h2,
+  .chr-prose h3 {
+    font-family: 'Spectral', Georgia, serif;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--ivory);
+  }
+
+  .chr-prose > h1 + *,
+  .chr-prose > h2 + *,
+  .chr-prose > h3 + * {
+    margin-top: 0.4em;
+  }
+
+  .chr-prose > * + h1,
+  .chr-prose > * + h2,
+  .chr-prose > * + h3 {
+    margin-top: 1.5em;
+  }
+
+  .chr-prose h1 {
+    font-size: 1.5em;
+  }
+
+  .chr-prose h2 {
+    font-size: 1.25em;
+  }
+
+  .chr-prose h3 {
+    font-size: 1.08em;
+  }
+
+  .chr-prose strong {
+    font-weight: 600;
+    color: var(--ivory);
+  }
+
+  .chr-prose em {
+    font-style: italic;
+  }
+
+  .chr-prose ul,
+  .chr-prose ol {
+    padding-left: 1.35em;
+  }
+
+  .chr-prose ul {
+    list-style: disc;
+  }
+
+  .chr-prose ol {
+    list-style: decimal;
+  }
+
+  .chr-prose li::marker {
+    color: var(--ivory-dim);
+  }
+
+  .chr-prose li + li {
+    margin-top: 0.3em;
+  }
+
+  .chr-prose blockquote {
+    border-left: 2px solid var(--gold-muted);
+    padding-left: 0.9em;
+    color: var(--ivory-dim);
+    font-style: italic;
+  }
+
+  .chr-prose code {
+    font-size: 0.9em;
+    background: var(--charcoal-shadow);
+    border-radius: 5px;
+    padding: 0.1em 0.35em;
+  }
+
+  .chr-prose pre {
+    background: var(--charcoal-shadow);
+    border-radius: 12px;
+    padding: 0.85em 1em;
+    overflow-x: auto;
+  }
+
+  .chr-prose pre code {
+    background: none;
+    padding: 0;
+  }
+
+  .chr-prose hr {
+    border: none;
+    border-top: 1px solid var(--chr-rule);
+  }
+
+  .chr-prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 14px;
+    display: block;
+  }
+
+  /* Inline checklists. TipTap renders these as a <ul data-type="taskList">, and
+     the native checkbox is restyled rather than replaced so it stays keyboard
+     operable and announces itself correctly. */
+  .chr-prose ul[data-type='taskList'] {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .chr-prose ul[data-type='taskList'] li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6em;
+  }
+
+  .chr-prose ul[data-type='taskList'] li > label {
+    flex: 0 0 auto;
+    margin-top: 0.28em;
+    line-height: 1;
+  }
+
+  .chr-prose ul[data-type='taskList'] li > div {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .chr-prose ul[data-type='taskList'] input[type='checkbox'] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 1.05em;
+    height: 1.05em;
+    border-radius: 5px;
+    background: var(--ink-charcoal-bg);
+    box-shadow: inset 2px 2px 4px var(--charcoal-shadow), inset -2px -2px 4px var(--charcoal-highlight);
+    cursor: pointer;
+    position: relative;
+  }
+
+  .chr-prose ul[data-type='taskList'] input[type='checkbox']:checked {
+    background: var(--gold-primary);
+    box-shadow: none;
+  }
+
+  .chr-prose ul[data-type='taskList'] input[type='checkbox']:checked::after {
+    content: '';
+    position: absolute;
+    left: 0.32em;
+    top: 0.12em;
+    width: 0.24em;
+    height: 0.5em;
+    border: solid var(--ink-charcoal-bg);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+
+  .chr-prose ul[data-type='taskList'] input[type='checkbox']:focus-visible {
+    outline: 2px solid var(--gold-primary);
+    outline-offset: 2px;
+  }
+
+  .chr-prose ul[data-type='taskList'] li[data-checked='true'] > div {
+    color: var(--ivory-dim);
+    text-decoration: line-through;
+  }
+
+  /* TipTap's empty-document placeholder. */
+  .chr-prose p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--ivory-dim);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* An image being uploaded is inserted immediately at 55% opacity so the write
+     never blocks on the network; it settles to full opacity when the upload
+     resolves. */
+  .chr-prose img[data-uploading='true'] {
+    opacity: 0.55;
   }
 }
 

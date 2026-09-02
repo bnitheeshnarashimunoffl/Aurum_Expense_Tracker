@@ -52,10 +52,27 @@ export default {
         inkSoft: 'var(--ink-soft)',
         virtusLine: 'var(--virtus-line)',
         virtusRest: 'var(--virtus-rest)',
+
+        // Chronicle module palette — charcoal + dark teal + gold on paper ivory.
+        // See src/index.css for the measured contrast rules these are bound by:
+        // gold is never text on teal, and goldMuted is never small text at all.
+        chrBase: 'var(--ink-charcoal-bg)',
+        chrTeal: 'var(--teal-deep)',
+        chrTealRaised: 'var(--teal-raised)',
+        // Declared through the channel vars so opacity modifiers work — see the note
+        // beside --gold-primary-rgb in src/index.css.
+        gold: 'rgb(var(--gold-primary-rgb) / <alpha-value>)',
+        goldMuted: 'var(--gold-muted)',
+        ivory: 'rgb(var(--ivory-rgb) / <alpha-value>)',
+        ivoryDim: 'rgb(var(--ivory-dim-rgb) / <alpha-value>)',
+        chrRule: 'var(--chr-rule)',
+        chrRuleTeal: 'var(--chr-rule-teal)',
+        chrLow: 'var(--chr-priority-low)',
       },
       fontFamily: {
         display: ['"Space Grotesk"', 'sans-serif'],
         inscribe: ['Cinzel', 'Georgia', 'serif'],
+        chronicle: ['Spectral', 'Georgia', 'serif'],
         body: ['Inter', 'sans-serif'],
       },
       spacing: {

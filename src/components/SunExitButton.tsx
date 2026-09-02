@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 
@@ -16,10 +16,12 @@ const SUN_DOWN_Y = 34
  * The tone picks the module's own neumorphic pair and accent, so the button sits
  * on that module's surface instead of borrowing Aurum's. `light` is for modules
  * on a light ground (Vigil), where Aurum's near-black button would read as a dark
- * blot on cream; `loom` is Loom's gunmetal and `virtus` its marble.
+ * blot on cream; `loom` is Loom's gunmetal, `virtus` its marble, and `chronicle`
+ * its charcoal — which needs its own tone rather than reusing `dark`, because
+ * Chronicle is the one dark module with a true neumorphic highlight.
  */
 interface SunExitButtonProps {
-  tone?: 'dark' | 'light' | 'loom' | 'virtus'
+  tone?: 'dark' | 'light' | 'loom' | 'virtus' | 'chronicle'
 }
 
 export default function SunExitButton({ tone = 'dark' }: SunExitButtonProps) {
@@ -33,7 +35,9 @@ export default function SunExitButton({ tone = 'dark' }: SunExitButtonProps) {
         ? 'loom-neu-raised-sm'
         : tone === 'virtus'
           ? 'virtus-neu-raised-sm'
-          : 'neu-raised'
+          : tone === 'chronicle'
+            ? 'chr-neu-raised-sm'
+            : 'neu-raised'
   const sunColor =
     tone === 'light'
       ? 'var(--vigil-gold)'
@@ -41,7 +45,21 @@ export default function SunExitButton({ tone = 'dark' }: SunExitButtonProps) {
         ? 'var(--loom-gold)'
         : tone === 'virtus'
           ? 'var(--bronze-primary)'
-          : 'var(--accent)'
+          : tone === 'chronicle'
+            ? 'var(--gold-primary)'
+            : 'var(--accent)'
+  // The ring sits on the module's own page colour, so the gap between button and ring
+  // reads as a gap rather than as a second stroke.
+  const offsetColor =
+    tone === 'light'
+      ? 'var(--vigil-bg-base)'
+      : tone === 'loom'
+        ? 'var(--loom-bg-base)'
+        : tone === 'virtus'
+          ? 'var(--marble-base)'
+          : tone === 'chronicle'
+            ? 'var(--ink-charcoal-bg)'
+            : 'var(--bg-base)'
 
   function handleExit() {
     if (exiting) return
@@ -57,8 +75,17 @@ export default function SunExitButton({ tone = 'dark' }: SunExitButtonProps) {
       onClick={handleExit}
       disabled={exiting}
       aria-label="Exit to Meridian"
-      className={`${surfaceClass} fixed right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full disabled:opacity-80`}
-      style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}
+      className={`${surfaceClass} fixed right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-80`}
+      // The ring colour has to be set as --tw-ring-color, not `color`: Tailwind's ring
+      // utilities read that variable, so setting the text colour instead silently
+      // leaves the ring at its default blue — which is what it did here at first.
+      style={
+        {
+          top: 'calc(env(safe-area-inset-top) + 1rem)',
+          '--tw-ring-color': sunColor,
+          '--tw-ring-offset-color': offsetColor,
+        } as CSSProperties
+      }
     >
       <svg width="26" height="26" viewBox="0 0 40 40" aria-hidden>
         <clipPath id="sun-exit-sky">
