@@ -223,27 +223,25 @@ export async function disablePush(): Promise<void> {
  * service worker awake — and none of that is visible any other way.
  */
 export async function sendTestNotification(): Promise<void> {
-  const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData.session?.access_token
-  if (!token) throw new PushSetupError('Not signed in.')
-
-  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
-  if (!url) throw new PushSetupError('VITE_SUPABASE_URL is not set.')
-
-  const response = await fetch(`${url}/functions/v1/push-test`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY as string,
-    },
-    body: '{}',
-  })
-  if (!response.ok) {
-    const detail = await response.json().catch(() => ({}))
+  // supabase.functions.invoke fetches a CURRENT session token itself (refreshing
+  // it first if it has gone stale) rather than trusting whatever this file last
+  // read — a hand-rolled fetch() with a manually attached Authorization header
+  // is exactly what produced a 403 "BadJwtToken" the moment the app had been
+  // open long enough for the token to age out.
+  const { data, error } = await supabase.functions.invoke('push-test', { body: {} })
+  if (error) {
+    // FunctionsHttpError carries the function's own JSON body (the sentence
+    // push-test/index.ts wrote) on `.context`; anything else is a network- or
+    // deploy-level failure.
+    const context = (error as { context?: Response }).context
+    const detail = context ? await context.json().catch(() => null) : null
     throw new PushSetupError(
       detail?.error ??
-        `The push-test function answered ${response.status}. Deploy it with: supabase functions deploy push-test`
+        error.message ??
+        'Could not reach the push-test function. Deploy it with: supabase functions deploy push-test'
     )
+  }
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw new PushSetupError(String((data as { error: unknown }).error))
   }
 }
