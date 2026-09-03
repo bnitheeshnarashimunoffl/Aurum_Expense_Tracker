@@ -106,6 +106,7 @@ deploying to Vercel), written for someone who's never used either service.
 | `npm run preview`  | Preview the production build locally             |
 | `npm run lint`     | Type-check only (`tsc --noEmit`)                 |
 | `npm run icons`    | Regenerate PWA/app icons from `public/icon-source.svg` |
+| `npm run vapid`    | Generate the Web Push VAPID keypair into `.env.local` (see [SETUP.md §11](./SETUP.md)) |
 
 ## Project structure
 

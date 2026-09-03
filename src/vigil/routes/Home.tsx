@@ -10,6 +10,7 @@ import WeeklyChart, { type WeeklyChartDay } from '../components/WeeklyChart'
 import StudyTimer from '../components/StudyTimer'
 import VigilToast from '../components/VigilToast'
 import HourglassIcon from '../components/HourglassIcon'
+import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 export default function Home() {
   const monday = mondayOf()
@@ -61,9 +62,11 @@ export default function Home() {
       ) : (
         <>
           {/* Deliberate order: the week first as context, then today's timer. */}
-          <WeeklyChart days={chartDays} />
+          <div data-tour="vigil-chart">
+            <WeeklyChart days={chartDays} />
+          </div>
 
-          <div className="mt-9">
+          <div data-tour="vigil-timer" className="mt-9">
             <StudyTimer
               studied={studied}
               running={running}
@@ -76,6 +79,8 @@ export default function Home() {
       )}
 
       <VigilToast message={message} />
+
+      <ModuleWalkthrough module="vigil" ready={!loading} />
     </div>
   )
 }

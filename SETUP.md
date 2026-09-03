@@ -266,3 +266,255 @@ a safe.
       note comes back with the match highlighted
 - [ ] Type `secret` into the search field, set a PIN, add a private note, lock
       it, then confirm that note appears in neither the Notes list nor search
+
+---
+
+## 11. Notifications (push), the dashboard, and walkthroughs
+
+Three platform-wide additions. Only the notifications need setup — the dashboard
+and the walkthroughs work as soon as the tables in 11.1 exist.
+
+Notifications fire **from the server**, on a schedule, so they arrive on time
+with Meridian completely closed. There is no client-side timer anywhere in this:
+`setTimeout` dies with the tab, and iOS has no Background Sync at all.
+
+Work through 11.1 → 11.6 in order.
+
+### 11.1 Tables
+
+**SQL Editor → New query**, paste all of `supabase/notifications_schema.sql`, Run.
+
+It creates `meridian_push_subscriptions`, `meridian_notification_settings`,
+`meridian_notification_log` and `meridian_walkthroughs`, turns RLS on for every
+one of them, and installs the log-pruning function.
+
+### 11.2 Generate the VAPID keys
+
+```bash
+npm run vapid
+```
+
+This writes `VITE_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and a placeholder
+`VAPID_SUBJECT` into `.env.local`. It deliberately does **not** print the private
+key — only the public one.
+
+Then open `.env.local` and change `VAPID_SUBJECT` to a real address you own:
+
+```
+VAPID_SUBJECT=mailto:your-real-email@example.com
+```
+
+Confirm the file is ignored by git (it should print the filename back):
+
+```bash
+git check-ignore .env.local
+```
+
+### 11.3 Push the secrets to Supabase
+
+Edge Functions do **not** read `.env.local`. Four secrets have to exist on the
+project. `CRON_SECRET` is any random string you invent — it is what stops
+someone who finds the function URL from making it send.
+
+Git Bash / macOS / Linux:
+
+```bash
+supabase secrets set VAPID_PUBLIC_KEY="$(grep '^VITE_VAPID_PUBLIC_KEY=' .env.local | cut -d= -f2-)"
+supabase secrets set VAPID_PRIVATE_KEY="$(grep '^VAPID_PRIVATE_KEY=' .env.local | cut -d= -f2-)"
+supabase secrets set VAPID_SUBJECT="$(grep '^VAPID_SUBJECT=' .env.local | cut -d= -f2-)"
+supabase secrets set CRON_SECRET="pick-a-long-random-string"
+```
+
+PowerShell:
+
+```powershell
+supabase secrets set VAPID_PUBLIC_KEY="$((Select-String '^VITE_VAPID_PUBLIC_KEY=' .env.local).Line -replace '^VITE_VAPID_PUBLIC_KEY=','')"
+supabase secrets set VAPID_PRIVATE_KEY="$((Select-String '^VAPID_PRIVATE_KEY=' .env.local).Line -replace '^VAPID_PRIVATE_KEY=','')"
+supabase secrets set VAPID_SUBJECT="$((Select-String '^VAPID_SUBJECT=' .env.local).Line -replace '^VAPID_SUBJECT=','')"
+supabase secrets set CRON_SECRET="pick-a-long-random-string"
+```
+
+Note the deliberate name change: the client variable is `VITE_VAPID_PUBLIC_KEY`
+(so Vite exposes it to the browser, which is how Web Push works), while the
+server secret is `VAPID_PUBLIC_KEY` with no prefix. Same value, two names.
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are injected
+into Edge Functions by Supabase automatically. Do not set them yourself — the CLI
+rejects secret names beginning with `SUPABASE_`.
+
+Check what landed:
+
+```bash
+supabase secrets list
+```
+
+### 11.4 Deploy the two functions
+
+```bash
+supabase functions deploy push-dispatch --no-verify-jwt
+supabase functions deploy push-test
+```
+
+`--no-verify-jwt` on the first one is required: pg_cron has no user session to
+present. That function is gated on the `x-cron-secret` header instead.
+`push-test` is the opposite — it runs under the caller's own JWT and can only
+ever reach that user's own devices, so it keeps JWT verification on.
+
+### 11.5 Schedule the cron
+
+1. Open `supabase/notifications_cron.sql`.
+2. Replace `<PROJECT_REF>` with the `xxxxxxxx` from your
+   `https://xxxxxxxx.supabase.co` URL, and `<CRON_SECRET>` with the exact string
+   you used in 11.3.
+3. Paste the whole file into **SQL Editor → New query** and Run.
+
+It enables `pg_cron` and `pg_net`, schedules `push-dispatch` every minute, and
+schedules a weekly prune of the notification log.
+
+Every minute rather than every hour, because Loom's reminder is "30 minutes
+before the class starts" and a class can start at any minute. It cannot
+double-send: every notification is claimed against a unique key in
+`meridian_notification_log` before it goes out, so a second attempt within the
+same window finds the slot already taken.
+
+Verify:
+
+```sql
+select jobname, schedule, active from cron.job;
+select status, return_message, start_time from cron.job_run_details order by start_time desc limit 10;
+select status_code, content from net._http_response order by id desc limit 10;
+```
+
+A healthy minute answers `200` with something like
+`{"checked":1,"sent":0,"skipped":0,"pruned":0,"errors":[]}`. **`sent: 0` is the
+correct answer on most minutes** — nothing is due then.
+
+### 11.6 Add the public key to your deployment
+
+In **Vercel → Project Settings → Environment Variables**, add:
+
+```
+VITE_VAPID_PUBLIC_KEY = <the public key printed by npm run vapid>
+```
+
+alongside the existing `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, then
+redeploy. Without it the deployed app cannot subscribe at all — the Notifications
+screen says exactly that rather than failing quietly.
+
+### 11.7 Turning them on, and the iPhone catch
+
+**On iPhone and iPad, Web Push only works for a PWA installed on the Home
+Screen. It does not work in a Safari tab — the APIs are simply absent there, and
+nothing errors.** That is the single most likely reason for "notifications don't
+work", so the app detects the situation and explains it instead of failing
+silently.
+
+1. Open the deployed URL in **Safari** (not Chrome — iOS only allows PWA install
+   from Safari).
+2. Share → **Add to Home Screen** → Add. (Step 8 of this guide.)
+3. Open Meridian **from the new Home Screen icon**.
+4. Tap the gear at the top right of the launcher → turn on **Notifications on
+   this device**, and accept the iOS permission prompt.
+5. Tap **Send a test notification**. One should arrive within a couple of
+   seconds. That single notification proves the entire chain: subscription
+   stored, VAPID keys valid and matched, function deployed, service worker awake.
+
+Android (Chrome, Firefox, Edge, Samsung Internet, Opera) needs no install — step
+4 onward works in an ordinary tab.
+
+Push also needs a real service worker, which only exists in a **built** app. In
+`npm run dev` there is none, so notifications cannot be tested there. Use
+`npm run build && npm run preview`, or the deployed site.
+
+### 11.8 What actually gets sent
+
+All times are your local time, taken from the timezone your device reports each
+time you save a setting.
+
+| Module | When | Sent only if |
+| --- | --- | --- |
+| **Aurum** | never | no notifications at all, by design |
+| **Kindle** | every hour on the hour, 6am–11pm | silent midnight–6am |
+| **Vigil** | 8am, 10am, 12pm, 2pm, 4pm, 6pm, 8pm, 10pm | **nothing at all once the 5 hours are done** |
+| **Loom** | 30 minutes before each class | a class is actually scheduled then |
+| **Virtus** | 6pm | no session started, and the day is not marked rest |
+| **Chronicle** | 10am, 2pm, 6pm, 10pm | there are incomplete to-dos due today |
+
+Each toggle is respected **server-side** — turning Kindle off means the
+notification is never sent, not sent and then hidden.
+
+The hours in that table are staggered by a few minutes rather than all landing
+on `:00` — Vigil at `:03`, Virtus at `:06`, Chronicle at `:09`. At 6pm all four
+of those modules can come due at once, and four notifications arriving together
+is how someone learns to swipe them away and then turn the feature off. Kindle
+keeps `:00`, because "every hour, on the hour" is what it is.
+
+Vigil's checks are also bounded to 8am–10pm rather than running literally every
+two hours around the clock. A 2am "you have not studied today" would fire every
+single night, immediately after the day rolls over, and would be the naggiest
+notification in the app. Change `VIGIL_HOURS` at the top of
+`supabase/functions/push-dispatch/index.ts` if you want it wider.
+
+Two more things worth knowing:
+
+- **Loom reminders read the Supabase mirror, not IndexedDB.** Loom is
+  offline-first and its source of truth is on your phone; the server can only see
+  what has synced. A timetable edited offline and never reconnected produces no
+  reminders until it syncs. Opening Loom — or just the launcher — while online is
+  enough.
+- **Secret Notes are never touched by any of this.** The dispatcher queries
+  `chronicle_todos` and nothing else in Chronicle, and no walkthrough mentions
+  that the section exists.
+
+### 11.9 Walkthroughs
+
+Nothing to configure. Meridian's own introduction runs on first login; each
+module's runs the first time that module is opened. Completion is stored per
+module in `meridian_walkthroughs`, so it follows the account across devices, and
+mirrored into `localStorage` so it neither flashes on launch nor breaks when Loom
+is opened with no connection.
+
+Replay any of them from **gear → Walkthroughs**. "Show" runs it once now;
+"Forget" clears the record so it triggers again on its own.
+
+### 11.10 Check it worked
+
+- [ ] The launcher shows six icons in two rows of three, then four summary cards
+- [ ] Swipe the **Aurum** card sideways — it flips between this month and all
+      time, and finishing the swipe does *not* open Aurum
+- [ ] The **Kindle** card's eight cells match today's colours in Kindle's own grid
+- [ ] Start Vigil's timer, come back to the launcher — the **Vigil** card counts
+      up live
+- [ ] The **Loom** card shows your next class; turn airplane mode on, reload, and
+      confirm it still does
+- [ ] Scrolling the launcher vertically works even when the drag starts on the
+      Aurum card
+- [ ] gear → master toggle on → **Send a test notification** arrives, and tapping
+      it opens Meridian
+- [ ] Turn one module's toggle off and confirm the column flipped in
+      **Table Editor → meridian_notification_settings**
+- [ ] gear → Walkthroughs → **Show** on Kindle: it opens Kindle and spotlights
+      the grid
+- [ ] At the top of an hour with Kindle's toggle on, the water reminder arrives
+      and opens Kindle when tapped
+
+### 11.11 If a notification does not arrive
+
+In order, because each step rules out the ones below it:
+
+1. **Is it iOS in a Safari tab?** Nothing will ever arrive. See 11.7.
+2. **Does the test notification work?** If yes, the chain is fine and what you
+   are seeing is a trigger's condition (nothing due, target already met, rest day
+   logged) rather than a fault.
+3. **Is the cron running?**
+   `select status, return_message, start_time from cron.job_run_details order by start_time desc limit 5;`
+4. **What did the function answer?**
+   `select status_code, content from net._http_response order by id desc limit 5;`
+   A `403` means `CRON_SECRET` in the SQL does not match the project secret. A
+   `500` naming a variable means that secret is missing.
+5. **Is there a subscription at all?** Check
+   **Table Editor → meridian_push_subscriptions** for a row. If one vanished, the
+   push service reported it dead and it was cleaned up — turn the master toggle
+   off and on again on that device.
+6. **Is the timezone right?** **Table Editor → meridian_notification_settings**,
+   `timezone` column. It is rewritten every time you save a setting.

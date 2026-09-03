@@ -57,6 +57,8 @@ export default function LoomNav() {
         <NavLink
           key={item.to}
           to={item.to}
+          // Anchor for Loom's walkthrough — see src/onboarding/steps.ts.
+          data-tour={item.to === '/loom/terms' ? 'loom-terms' : undefined}
           end={item.to === '/loom'}
           className={({ isActive }) =>
             `flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-3 pb-2 text-[11px] ${

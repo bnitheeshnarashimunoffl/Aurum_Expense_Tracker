@@ -12,6 +12,7 @@ import { useAllTimeBalance } from '@/hooks/useAllTimeBalance'
 import { startOfMonthISO, startOfWeekISO, todayISO } from '@/lib/format'
 import type { Scope, Period, Transaction } from '@/lib/types'
 import TransactionDetailSheet from '@/components/TransactionDetailSheet'
+import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 export default function Dashboard() {
   const [scope, setScope] = useState<Scope>('all')
@@ -100,16 +101,18 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <SwipeableBalanceDial
-        monthNet={netBalance}
-        monthBudgetPct={budgetUsedPct}
-        hasBudget={totalBudget > 0}
-        monthLoading={monthLoading}
-        totalNet={totalNet}
-        totalIncome={totalIncome}
-        totalExpense={totalExpense}
-        totalLoading={totalLoading}
-      />
+      <div data-tour="aurum-dial">
+        <SwipeableBalanceDial
+          monthNet={netBalance}
+          monthBudgetPct={budgetUsedPct}
+          hasBudget={totalBudget > 0}
+          monthLoading={monthLoading}
+          totalNet={totalNet}
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
+          totalLoading={totalLoading}
+        />
+      </div>
 
       <div className="mt-6 flex gap-3">
         <Segmented
@@ -188,6 +191,10 @@ export default function Dashboard() {
         category={selected ? categoryById.get(selected.category_id) : undefined}
         onClose={() => setSelected(null)}
       />
+
+      {/* Held back until the dial has real numbers in it — a spotlight around a
+          skeleton is a spotlight around nothing. */}
+      <ModuleWalkthrough module="aurum" ready={!monthLoading} />
     </div>
   )
 }

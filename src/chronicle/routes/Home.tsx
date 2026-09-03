@@ -22,6 +22,7 @@ import TagPicker from '../components/TagPicker'
 import RecordingBar from '../components/RecordingBar'
 import SecretSection from '../components/SecretSection'
 import QuillIcon from '../components/QuillIcon'
+import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 import type { ItemType, Priority, Todo } from '../lib/types'
 
 const TAB_KEY = 'chronicle.tab'
@@ -448,6 +449,10 @@ export default function ChronicleHome() {
       {secretMode && (
         <SecretSection mode={secretMode} onLock={lock} onReady={() => setSecretMode('unlocked')} />
       )}
+
+      {/* Never over the Secret Notes section, and — see src/onboarding/steps.ts —
+          it does not mention that section exists. */}
+      <ModuleWalkthrough module="chronicle" ready={!todos.loading && secretMode === null} />
     </div>
   )
 

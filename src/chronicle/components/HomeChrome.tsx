@@ -38,6 +38,7 @@ export function SearchField({ value, onChange, placeholder = 'Search everything'
 
   return (
     <div
+      data-tour="chronicle-search"
       className={`${teal ? 'chr-neu-pressed-teal' : 'chr-neu-pressed-sm'} flex items-center gap-2.5 rounded-card px-3.5 focus-within:ring-2 focus-within:ring-gold`}
     >
       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden className="shrink-0">
@@ -95,7 +96,7 @@ export function TabBar({ active, onChange, counts }: TabBarProps) {
   const reduceMotion = useReducedMotion()
 
   return (
-    <div role="tablist" aria-label="Chronicle sections" className="chr-neu-raised-sm flex gap-1 rounded-card p-1">
+    <div data-tour="chronicle-tabs" role="tablist" aria-label="Chronicle sections" className="chr-neu-raised-sm flex gap-1 rounded-card p-1">
       {TABS.map((tab) => {
         const isActive = tab.id === active
         return (
@@ -158,6 +159,7 @@ export function CaptureButton({ tab, onCapture }: CaptureButtonProps) {
       <button
         type="button"
         onClick={onCapture}
+        data-tour="chronicle-capture"
         aria-label={CAPTURE_LABEL[tab]}
         className="chr-neu-raised pointer-events-auto absolute right-5 flex h-[58px] w-[58px] items-center justify-center rounded-full ring-1 ring-inset ring-gold/25 transition-transform active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-gold"
         style={{ bottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)' }}

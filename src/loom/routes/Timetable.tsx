@@ -15,6 +15,7 @@ import PresetEditorSheet, { type PresetDraft } from '../components/PresetEditorS
 import CopyToSaturdaySheet from '../components/CopyToSaturdaySheet'
 import SyncBadge from '../components/SyncBadge'
 import LoomIcon from '../components/LoomIcon'
+import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 export default function Timetable() {
   const [params, setParams] = useSearchParams()
@@ -139,7 +140,7 @@ export default function Timetable() {
         </p>
       )}
 
-      <div className="loom-neu-pressed mb-4 flex rounded-full p-1" role="group" aria-label="Timetable view">
+      <div data-tour="loom-view" className="loom-neu-pressed mb-4 flex rounded-full p-1" role="group" aria-label="Timetable view">
         {(['week', 'day'] as const).map((option) => (
           <button
             key={option}
@@ -230,6 +231,10 @@ export default function Timetable() {
         onSave={handleCreatePreset}
         onClose={() => setCreatingPreset(false)}
       />
+
+      {/* Only once a term with a real grid exists — there is nothing to point at
+          on the empty-state screen, and the module's own copy handles that case. */}
+      <ModuleWalkthrough module="loom" ready={Boolean(block)} />
 
       {block && (
         <CopyToSaturdaySheet

@@ -71,6 +71,8 @@ export default function BottomNav({ onAddClick }: { onAddClick: () => void }) {
     <NavLink
       key={item.to}
       to={item.to}
+      // Anchors for Aurum's walkthrough — see src/onboarding/steps.ts.
+      data-tour={item.to === '/aurum/budgets' ? 'aurum-budgets' : undefined}
       end={item.to === '/aurum'}
       className={({ isActive }) =>
         `flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-3 pb-2 text-[11px] ${
@@ -89,6 +91,7 @@ export default function BottomNav({ onAddClick }: { onAddClick: () => void }) {
 
       <button
         onClick={onAddClick}
+        data-tour="aurum-add"
         aria-label="Add transaction"
         className="neu-raised -mt-6 flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-accent text-ink"
       >

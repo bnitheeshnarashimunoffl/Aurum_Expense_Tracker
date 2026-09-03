@@ -58,6 +58,10 @@ export default function WeekGrid({ slots, block, presets, readOnly, onCellTap }:
     // The cap lives on the card, not the grid, so a term with few slots ends the
     // card where its rows end instead of leaving a blank band inside the surface.
     <div
+      // Anchor for Loom's walkthrough. Set on the grid's own root rather than on
+      // a wrapper: this element is `flex-1` inside the page's flex column, and a
+      // wrapper would sever that relationship and collapse the week.
+      data-tour="loom-grid"
       className="loom-neu-raised flex min-h-0 flex-1 flex-col rounded-card p-3"
       style={{ maxHeight: 24 + 22 + slots.length * (ROW_MAX + 4) }}
     >

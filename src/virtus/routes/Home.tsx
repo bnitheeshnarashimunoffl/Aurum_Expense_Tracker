@@ -23,6 +23,7 @@ import MonthGrid from '../components/MonthGrid'
 import DayDetailSheet from '../components/DayDetailSheet'
 import SplitDayPicker from '../components/SplitDayPicker'
 import LaurelIcon from '../components/LaurelIcon'
+import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 interface Action {
   label: string
@@ -166,7 +167,7 @@ export default function Home() {
       )}
 
       {/* Today — the one action on this screen, and quieter than the grid above it. */}
-      <section className="virtus-neu-raised mb-5 rounded-card px-4 py-4">
+      <section data-tour="virtus-today" className="virtus-neu-raised mb-5 rounded-card px-4 py-4">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <span className="block text-[11px] text-inkSoft">Today</span>
@@ -231,6 +232,10 @@ export default function Home() {
       />
 
       {gate}
+
+      {/* The month tab has no `virtus-grid` on screen, so the tour only runs while
+          the week view — the default — is showing. */}
+      <ModuleWalkthrough module="virtus" ready={tab === 'week'} />
     </div>
   )
 

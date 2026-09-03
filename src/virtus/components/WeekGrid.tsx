@@ -24,7 +24,8 @@ interface WeekGridProps {
  */
 export default function WeekGrid({ dates, sessions, splitDayName, onSelectDay }: WeekGridProps) {
   return (
-    <div className="virtus-neu-raised rounded-card px-3 pb-3 pt-2.5">
+    // data-tour anchors Virtus's walkthrough — see src/onboarding/steps.ts.
+    <div data-tour="virtus-grid" className="virtus-neu-raised rounded-card px-3 pb-3 pt-2.5">
       <div className="grid grid-cols-7 gap-1.5">
         {dates.map((date, i) => (
           <div key={`h-${date}`} className="pb-1.5 text-center">

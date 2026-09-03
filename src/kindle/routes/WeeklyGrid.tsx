@@ -12,6 +12,7 @@ import LogHabitSheet from '../components/LogHabitSheet'
 import KindleToast from '../components/KindleToast'
 import FlameIcon from '../components/FlameIcon'
 import LoadingRing from '@/components/LoadingRing'
+import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 import type { Habit } from '../lib/types'
 
 export default function WeeklyGrid() {
@@ -76,7 +77,9 @@ export default function WeeklyGrid() {
         <>
           {/* Read-only summary. Nothing here logs anything: today goes through the pills
               below, and past days go through History's PIN-gated edit flow. */}
-          <HabitGrid habits={habits} days={days} logs={logs} />
+          <div data-tour="kindle-grid">
+            <HabitGrid habits={habits} days={days} logs={logs} />
+          </div>
           <p className="mt-3 text-[11px] text-muted">Past days are edited from History.</p>
 
           <section className="mt-7">
@@ -84,7 +87,7 @@ export default function WeeklyGrid() {
               <h2 className="font-display text-sm font-semibold text-primary">Log today</h2>
               <span className="text-[11px] text-muted">{formatDateShort(today)} · hold to reset</span>
             </div>
-            <div className="space-y-2.5">
+            <div data-tour="kindle-pills" className="space-y-2.5">
               {habits.map((habit) => (
                 <HabitPill
                   key={habit.id}
@@ -110,6 +113,9 @@ export default function WeeklyGrid() {
       />
 
       <KindleToast message={message} />
+
+      {/* Waits for the grid and pills to exist before pointing at them. */}
+      <ModuleWalkthrough module="kindle" ready={!loading && habits.length > 0} />
     </div>
   )
 }

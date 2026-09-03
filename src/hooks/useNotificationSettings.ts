@@ -1,0 +1,112 @@
+import { useCallback, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { subscribe, notify } from '@/lib/sync'
+
+const CHANNEL = 'meridian_notification_settings'
+
+/**
+ * The per-module switches. Aurum is absent because Aurum has no notifications —
+ * that is a design decision, not an oversight, and leaving it out of the type is
+ * what stops a future toggle being added for it by accident.
+ */
+export interface NotificationSettings {
+  enabled: boolean
+  kindle_water: boolean
+  vigil_study: boolean
+  loom_classes: boolean
+  virtus_gym: boolean
+  chronicle_todos: boolean
+  timezone: string
+}
+
+export type ModuleToggle = Exclude<keyof NotificationSettings, 'enabled' | 'timezone'>
+
+export const MODULE_TOGGLES: { key: ModuleToggle; module: string; label: string; detail: string }[] = [
+  { key: 'kindle_water', module: 'Kindle', label: 'Water reminders', detail: 'Hourly, 6am to 11pm. Silent overnight.' },
+  { key: 'vigil_study', module: 'Vigil', label: 'Study check-ins', detail: 'Every two hours, and nothing once the five hours are done.' },
+  { key: 'loom_classes', module: 'Loom', label: 'Class reminders', detail: '30 minutes before each class, with its room.' },
+  { key: 'virtus_gym', module: 'Virtus', label: 'Gym check', detail: '6pm, only if nothing is logged for the day.' },
+  { key: 'chronicle_todos', module: 'Chronicle', label: 'To-dos due today', detail: '10am, 2pm, 6pm and 10pm — only when something is actually due.' },
+]
+
+const DEFAULTS: NotificationSettings = {
+  enabled: false,
+  kindle_water: true,
+  vigil_study: true,
+  loom_classes: true,
+  virtus_gym: true,
+  chronicle_todos: true,
+  timezone: 'Asia/Kolkata',
+}
+
+function currentTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || DEFAULTS.timezone
+  } catch {
+    return DEFAULTS.timezone
+  }
+}
+
+/**
+ * Reads and writes the row the DISPATCHER consults. Everything here is enforced
+ * server-side: turning Kindle off means the cron never sends that notification,
+ * rather than the notification arriving and being hidden. That is the difference
+ * between a setting and a lie.
+ *
+ * The row is created lazily, on the first write — a user who never opens this
+ * screen has no row, and the dispatcher's `where enabled = true` skips them,
+ * which is the correct default for someone who has not asked for notifications.
+ */
+export function useNotificationSettings() {
+  const [settings, setSettings] = useState<NotificationSettings>(DEFAULTS)
+  const [exists, setExists] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const refresh = useCallback(async () => {
+    const { data, error: queryError } = await supabase.from('meridian_notification_settings').select('*').limit(1)
+    if (queryError) {
+      setError(queryError.message)
+    } else {
+      const row = data?.[0]
+      setExists(Boolean(row))
+      setSettings(row ? { ...DEFAULTS, ...(row as NotificationSettings) } : DEFAULTS)
+      setError(null)
+    }
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    refresh()
+    return subscribe(CHANNEL, refresh)
+  }, [refresh])
+
+  /**
+   * Every write carries the device's current IANA timezone. The dispatcher has no
+   * other way to know what "6pm" means, and refreshing it on each save means
+   * moving between zones fixes itself rather than needing a settings visit.
+   */
+  const save = useCallback(
+    async (patch: Partial<NotificationSettings>) => {
+      const { data: userData } = await supabase.auth.getUser()
+      if (!userData.user) throw new Error('Not signed in')
+
+      const next = { ...settings, ...patch, timezone: currentTimeZone() }
+      setSettings(next) // Optimistic: a toggle that lags behind the thumb feels broken.
+
+      const { error: upsertError } = await supabase.from('meridian_notification_settings').upsert(
+        { user_id: userData.user.id, ...next, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      )
+      if (upsertError) {
+        await refresh()
+        throw upsertError
+      }
+      setExists(true)
+      notify(CHANNEL)
+    },
+    [settings, refresh]
+  )
+
+  return { settings, exists, loading, error, save, refresh, deviceTimeZone: currentTimeZone() }
+}

@@ -36,6 +36,15 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Push handlers, pulled into the generated worker rather than replacing
+        // it (see public/push-sw.js for why). importScripts runs before any of
+        // Workbox's own setup, so the `push` listener is registered the instant
+        // the worker wakes — which for a push event is all the time it gets.
+        importScripts: ['/push-sw.js'],
+        // ...and kept OUT of the precache manifest. It is loaded as a worker
+        // import, not fetched by the page, so precaching it would only pin a
+        // stale copy behind the Workbox cache on the next deploy.
+        globIgnores: ['**/push-sw.js'],
         // Loom is offline-first, so the app SHELL has to load with no network too —
         // not just its data. These are client-side routes with no file of their own,
         // so every navigation falls back to the precached index.html, which then

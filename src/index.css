@@ -29,6 +29,26 @@
   --text-primary: #edede9;
   --text-muted: #8a8f98;
 
+  /* Meridian dashboard — the summary cards on the launcher.
+     Deliberately its OWN charcoal, a step lighter than both --bg-base (the
+     launcher ground, near-black) and --bg-surface (Aurum's card tone): the cards
+     have to sit forward of the ground they are on while still reading as a
+     different surface from anything inside a module. The pair below is a real
+     neumorphic pair rather than a black shadow plus a 3% white wash — at this
+     size on this ground, the wash extrudes nothing, which is the same lesson
+     Chronicle's palette records. */
+  --mer-card: #1a1d21;
+  --mer-card-shadow: #0a0c0e;
+  --mer-card-highlight: #262a30;
+  --mer-card-well: #14171a;
+  /* Kindle's royal purple, lifted to be readable AS TEXT on the card above.
+     --kindle-purple itself (#3b2b5c) is a surface colour and lands at 1.5:1 here
+     — invisible. This keeps the same hue (262°) at a lightness that measures
+     5.14:1 on --mer-card, so the card's label is recognisably Kindle's purple
+     rather than yet another gold. Dashboard-only; inside Kindle the real purple
+     is still the one doing the work. */
+  --mer-kindle-accent: #9b7fd4;
+
   /* Kindle module — dark blue / royal purple base, gold accent shared with the rest
      of Meridian, muted sage-green for a "completed" fill that doesn't clash with it. */
   --kindle-bg-base: #12142b;
@@ -216,6 +236,29 @@ h3,
     );
     background-size: 200% 100%;
     animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* ---------------------------------------------------------------------- */
+  /* Meridian dashboard cards                                               */
+  /* ---------------------------------------------------------------------- */
+
+  /* The shared base every summary card is built from: charcoal ground, the
+     platform's neumorphic pair at the same offsets every module uses, and a
+     single gold hairline along the top edge. That gold line is the whole reason
+     four cards carrying four different palettes still read as one surface —
+     it is the only thing all of them have in common, and it is on every one. */
+  .mer-card {
+    background: var(--mer-card);
+    box-shadow: 7px 7px 15px var(--mer-card-shadow), -7px -7px 15px var(--mer-card-highlight),
+      inset 0 1px 0 rgba(201, 164, 106, 0.2);
+  }
+
+  /* Inset wells inside a card — the Kindle habit row's empty cells, Vigil's
+     progress track. Tuned darker than the card so a filled cell reads as sitting
+     IN the card rather than on it. */
+  .mer-card-well {
+    background: var(--mer-card-well);
+    box-shadow: inset 3px 3px 7px var(--mer-card-shadow), inset -2px -2px 5px var(--mer-card-highlight);
   }
 
   /* Kindle's own neumorphic pair, tuned for its dark blue/purple base instead of

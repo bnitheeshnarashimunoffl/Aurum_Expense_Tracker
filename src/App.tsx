@@ -9,6 +9,7 @@ import ForgotPassword from '@/routes/ForgotPassword'
 import Launcher from '@/routes/Launcher'
 import Dashboard from '@/routes/Dashboard'
 import LoadingRing from '@/components/LoadingRing'
+import PushNavigationBridge from '@/components/PushNavigationBridge'
 import KindleShell from '@/kindle/components/KindleShell'
 import KindleWeeklyGrid from '@/kindle/routes/WeeklyGrid'
 import VigilShell from '@/vigil/components/VigilShell'
@@ -27,6 +28,10 @@ const ManagePresets = lazy(() => import('@/routes/ManagePresets'))
 const Budgets = lazy(() => import('@/routes/Budgets'))
 const Settings = lazy(() => import('@/routes/Settings'))
 const ExportShare = lazy(() => import('@/routes/ExportShare'))
+// Meridian's own settings — notification toggles and walkthrough replay. Platform
+// level, above any single module, which is why it sits beside the launcher rather
+// than inside one of the six shells.
+const MeridianSettings = lazy(() => import('@/routes/MeridianSettings'))
 const KindleHistory = lazy(() => import('@/kindle/routes/History'))
 const KindleSettings = lazy(() => import('@/kindle/routes/Settings'))
 const VigilTopics = lazy(() => import('@/vigil/routes/Topics'))
@@ -44,6 +49,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        {/* Routes a tapped notification to the right screen without a full reload. */}
+        <PushNavigationBridge />
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -53,6 +60,9 @@ export default function App() {
             <Route path="/" element={<RequireAuth />}>
               {/* Meridian launcher — the shell's home screen. */}
               <Route index element={<Launcher />} />
+
+              {/* Platform settings: notification toggles and walkthrough replay. */}
+              <Route path="settings" element={<MeridianSettings />} />
 
               {/* Aurum module, nested under /aurum so future modules can sit alongside it. */}
               <Route path="aurum" element={<AppShell />}>
