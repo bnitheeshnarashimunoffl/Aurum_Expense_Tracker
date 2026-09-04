@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
 import SunExitButton from '@/components/SunExitButton'
 import Toggle from '@/components/Toggle'
 import Toast from '@/components/Toast'
@@ -197,6 +198,17 @@ export default function MeridianSettings() {
     showToast(`${WALKTHROUGHS[module].label} will show again on its own`)
   }
 
+  /**
+   * Same effect as Aurum's own "Log out" (one shared Supabase Auth session
+   * covers the whole platform, so there is only ever one to end) — offered here
+   * too since this is the platform-level settings screen, not tucked inside a
+   * single module.
+   */
+  async function handleSignOut() {
+    await supabase.auth.signOut()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div className="mx-auto min-h-full max-w-lg px-5 pb-20 pt-safe-top">
       <SunExitButton />
@@ -314,6 +326,14 @@ export default function MeridianSettings() {
           })}
         </div>
       </Section>
+
+      <button
+        type="button"
+        onClick={() => void handleSignOut()}
+        className="neu-raised min-h-[46px] w-full rounded-card text-sm font-medium text-expense focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+      >
+        Sign out
+      </button>
 
       <Toast message={message} />
     </div>

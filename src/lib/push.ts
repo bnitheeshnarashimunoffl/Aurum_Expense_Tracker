@@ -223,11 +223,21 @@ export async function disablePush(): Promise<void> {
  * service worker awake — and none of that is visible any other way.
  */
 export async function sendTestNotification(): Promise<void> {
-  // supabase.functions.invoke fetches a CURRENT session token itself (refreshing
-  // it first if it has gone stale) rather than trusting whatever this file last
-  // read — a hand-rolled fetch() with a manually attached Authorization header
-  // is exactly what produced a 403 "BadJwtToken" the moment the app had been
-  // open long enough for the token to age out.
+  // Force a fresh access token before invoking, rather than trusting whatever
+  // supabase-js currently has cached. Its background auto-refresh timer only
+  // fires while the JS runtime is actually alive — a PWA that spent time
+  // backgrounded (screen locked, tab suspended by the OS) can come back with an
+  // access token that quietly expired while nothing was running to renew it.
+  // functions.invoke() does NOT notice that on its own: it attaches whatever
+  // getSession() returns, live-but-expired token included, and that is exactly
+  // what a 403 "BadJwtToken" here turned out to mean — not a deploy problem,
+  // not a config problem, just a token that aged out while the app was asleep.
+  // refreshSession() forces the network round-trip that mints a new one.
+  const { error: refreshError } = await supabase.auth.refreshSession()
+  if (refreshError) {
+    throw new PushSetupError('Your session has expired. Sign out and back in, then try again.')
+  }
+
   const { data, error } = await supabase.functions.invoke('push-test', { body: {} })
   if (error) {
     // FunctionsHttpError carries the function's own JSON body (the sentence

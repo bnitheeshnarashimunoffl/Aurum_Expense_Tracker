@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useCategories } from '@/hooks/useCategories'
 import { useTransactions } from '@/hooks/useTransactions'
-import { supabase } from '@/lib/supabase'
 import { transactionsToCSV, downloadCSV } from '@/lib/csv'
 import { todayISO } from '@/lib/format'
 import BottomSheet from '@/components/BottomSheet'
@@ -14,7 +13,6 @@ import type { Category, TxType } from '@/lib/types'
 const DEFAULT_COLOR = '#C9A46A'
 
 export default function Settings() {
-  const navigate = useNavigate()
   const { categories, loading, addCategory, updateCategory, archiveCategory } = useCategories()
   const { transactions } = useTransactions()
 
@@ -68,11 +66,6 @@ export default function Settings() {
   function handleExportCSV() {
     const csv = transactionsToCSV(transactions, categories)
     downloadCSV(csv, `aurum-transactions-${todayISO()}.csv`)
-  }
-
-  async function handleLogout() {
-    await supabase.auth.signOut()
-    navigate('/login', { replace: true })
   }
 
   const activeCategories = categories.filter((c) => !c.archived)
@@ -149,13 +142,6 @@ export default function Settings() {
           Export & Share PDF report
         </Link>
       </section>
-
-      <button
-        onClick={handleLogout}
-        className="neu-raised min-h-[44px] w-full rounded-card px-4 py-3 text-sm font-medium text-expense"
-      >
-        Log out
-      </button>
 
       <BottomSheet
         open={editing !== null}
