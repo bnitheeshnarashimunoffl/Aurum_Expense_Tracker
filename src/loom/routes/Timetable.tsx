@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { formatDate, todayISO } from '@/lib/format'
 import LoadingRing from '@/components/LoadingRing'
-import { useActiveTerm, useBlocks, usePresets, useSlots, useTerm, presetMap } from '../hooks/useLoomData'
+import { useActiveTerm, useBlocks, useLoomReady, usePresets, useSlots, useTerm, presetMap } from '../hooks/useLoomData'
 import { assignSlot, copyDayInto, upsertPreset, newId } from '../lib/db'
 import { scheduleSync } from '../lib/sync'
 import { blockInEffect, blockRunsUntil, sortBlocks, todayDayIndex } from '../lib/schedule'
@@ -28,6 +28,11 @@ export default function Timetable() {
   const slots = useSlots(term?.id)
   const presets = usePresets(term?.id)
   const blocks = useBlocks(term?.id)
+  // Waits for the first background pull before concluding "no term" — see the
+  // doc comment on useLoomReady. Without this a freshly wiped device shows
+  // "head to Terms to create your first semester" for a moment even when a
+  // term already exists in Supabase and is about to arrive.
+  const loomReady = useLoomReady()
 
   const [view, setView] = useState<'week' | 'day'>('week')
   const [day, setDay] = useState<DayIndex>(todayDayIndex)
@@ -51,7 +56,7 @@ export default function Timetable() {
   const readOnly = term?.archived === 1
   const byId = presetMap(presets)
 
-  const loading = term === undefined || slots === undefined || presets === undefined || blocks === undefined
+  const loading = !loomReady || term === undefined || slots === undefined || presets === undefined || blocks === undefined
 
   async function handleAssign(presetId: string | null) {
     if (!block || !assignTarget) return

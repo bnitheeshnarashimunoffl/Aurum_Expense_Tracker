@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { formatDate, todayISO } from '@/lib/format'
 import LoadingRing from '@/components/LoadingRing'
-import { useActiveTerm, useBlocks, usePresets, useSlots, useTerms } from '../hooks/useLoomData'
+import { useActiveTerm, useBlocks, useLoomReady, usePresets, useSlots, useTerms } from '../hooks/useLoomData'
 import { addBlock, addSlot, createTerm, deleteBlock, deleteSlot, deleteTerm, updateSlot, updateTerm } from '../lib/db'
 import { scheduleSync } from '../lib/sync'
 import { blockInEffect, blockRunsUntil, formatSlotRange } from '../lib/schedule'
@@ -14,13 +14,16 @@ export default function Terms() {
   const active = useActiveTerm()
   const slots = useSlots(active?.id)
   const blocks = useBlocks(active?.id)
+  // Waits for the first background pull to settle before this screen is allowed
+  // to conclude "you have no term yet" — see the doc comment on useLoomReady.
+  const loomReady = useLoomReady()
 
   const [newTermOpen, setNewTermOpen] = useState(false)
   const [slotsOpen, setSlotsOpen] = useState(false)
   const [blockOpen, setBlockOpen] = useState(false)
   const [editingTerm, setEditingTerm] = useState<Term | null>(null)
 
-  if (terms === undefined) {
+  if (terms === undefined || !loomReady) {
     return <div className="px-4 pt-4"><LoadingRing label="Loading terms" /></div>
   }
 

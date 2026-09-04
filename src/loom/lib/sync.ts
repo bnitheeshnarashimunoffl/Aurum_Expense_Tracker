@@ -157,13 +157,35 @@ export function scheduleSync(delayMs = 1500) {
   debounce = window.setTimeout(() => void syncNow(), delayMs)
 }
 
+/**
+ * Memoizes the FIRST sync attempt of this session, so every screen that needs to
+ * know "has Loom had a chance to pull existing data down yet" awaits the exact
+ * same attempt instead of each triggering (and racing) its own.
+ *
+ * This exists because of a real bug: a freshly wiped device's IndexedDB is
+ * empty, but Dexie's live queries resolve that emptiness INSTANTLY — well
+ * before the network pull below has had a chance to run. A screen that reads
+ * "no term exists" at that instant and offers to create one (Terms.tsx's
+ * "Start new term") can create a brand-new term while the account's real one is
+ * still only in Supabase, and since the device didn't know that term existed
+ * yet, it has no way to deactivate it — leaving two rows both marked
+ * `is_active = true`, which loom_schema.sql's own comment says should be
+ * impossible. useLoomReady() in useLoomData.ts is what screens actually consume
+ * to close this window.
+ */
+let firstSyncPromise: Promise<SyncState> | null = null
+export function ensureFirstSync(): Promise<SyncState> {
+  if (!firstSyncPromise) firstSyncPromise = syncNow()
+  return firstSyncPromise
+}
+
 /** Wires up sync-on-reconnect and a slow heartbeat. Returns a teardown function. */
 export function startSyncLoop(): () => void {
   const onOnline = () => void syncNow()
   window.addEventListener('online', onOnline)
   window.addEventListener('offline', () => emit('offline'))
   const heartbeat = window.setInterval(() => void syncNow(), 5 * 60 * 1000)
-  void syncNow()
+  void ensureFirstSync()
   return () => {
     window.removeEventListener('online', onOnline)
     window.clearInterval(heartbeat)

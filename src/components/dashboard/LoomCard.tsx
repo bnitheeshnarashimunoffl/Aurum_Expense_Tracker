@@ -3,7 +3,7 @@ import SummaryCard, { CardCaption, CardSkeleton } from './SummaryCard'
 import { useAuth } from '@/context/AuthContext'
 import { setLoomUserId } from '@/loom/lib/db'
 import { syncNow } from '@/loom/lib/sync'
-import { useActiveTerm, useBlocks, usePresets, useSlots, presetMap } from '@/loom/hooks/useLoomData'
+import { useActiveTerm, useBlocks, useLoomReady, usePresets, useSlots, presetMap } from '@/loom/hooks/useLoomData'
 import { blockInEffect, formatTime, sortSlots } from '@/loom/lib/schedule'
 import { formatDate, todayISO } from '@/lib/format'
 
@@ -51,7 +51,8 @@ export default function LoomCard() {
   const blocks = useBlocks(term?.id)
 
   // Dexie's live queries report `undefined` until they have run once.
-  const loading = term === undefined || slots === undefined || presets === undefined || blocks === undefined
+  const loomReady = useLoomReady()
+  const loading = !loomReady || term === undefined || slots === undefined || presets === undefined || blocks === undefined
 
   const state = useMemo(() => {
     if (loading) return { kind: 'loading' as const }

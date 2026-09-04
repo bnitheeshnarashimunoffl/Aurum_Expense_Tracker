@@ -1,6 +1,8 @@
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../lib/db'
 import { sortSlots } from '../lib/schedule'
+import { ensureFirstSync } from '../lib/sync'
 import type { ClassPreset, ScheduleBlock, Term, TimeSlot } from '../lib/types'
 
 /**
@@ -10,6 +12,32 @@ import type { ClassPreset, ScheduleBlock, Term, TimeSlot } from '../lib/types'
  * write lands, including writes applied by a background sync pull, so the UI
  * stays current without any manual refresh plumbing.
  */
+
+/**
+ * True once Loom's first sync attempt for this session has settled — pulled
+ * something down, found nothing, went offline, or errored; any outcome counts.
+ *
+ * A screen that offers "no term exists yet, start one" MUST wait for this
+ * before showing that offer. Reading Dexie the instant a screen mounts is not
+ * enough on its own: on a freshly wiped device the local database is genuinely,
+ * correctly empty, and answers that in the same frame — well before the
+ * background pull below has had any chance to bring an existing term down from
+ * Supabase. Skipping this wait is exactly what let two separate devices (or one
+ * device wiped and rebuilt) each create their own "the" active term.
+ */
+export function useLoomReady(): boolean {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    void ensureFirstSync().finally(() => {
+      if (!cancelled) setReady(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return ready
+}
 
 export function useTerms(): Term[] | undefined {
   return useLiveQuery(async () => {
