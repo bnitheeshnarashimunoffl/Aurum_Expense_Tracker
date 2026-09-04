@@ -94,12 +94,24 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 pt-4">
-      <div className="mb-2 flex items-center justify-between">
-        <h1 className="font-display text-2xl font-bold text-primary">Aurum</h1>
-        <Link to="/aurum/export?range=week" className="text-xs font-medium text-accent">
+      {/* Three things want the top of this screen: the share link, the wordmark,
+          and the fixed sun-exit button in the right corner. The share link used
+          to sit right where the sun lands and the two overlapped, so the link
+          takes the left, the sun keeps the right, and the wordmark is centred on
+          the PAGE rather than in the gap between them — absolutely positioned so
+          its centre never shifts with the length of the link's label. min-h
+          matches the sun's 44px so all three sit on one line. */}
+      <header className="relative mb-2 flex min-h-[44px] items-center">
+        <Link
+          to="/aurum/export?range=week"
+          className="relative z-10 flex min-h-[44px] items-center text-xs font-medium text-accent"
+        >
           Share this week
         </Link>
-      </div>
+        <h1 className="font-display pointer-events-none absolute inset-x-0 text-center text-2xl font-bold text-primary">
+          Aurum
+        </h1>
+      </header>
 
       <div data-tour="aurum-dial">
         <SwipeableBalanceDial
