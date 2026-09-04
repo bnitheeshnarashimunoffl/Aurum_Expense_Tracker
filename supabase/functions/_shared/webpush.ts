@@ -257,5 +257,19 @@ export function vapidFromEnv(env: (key: string) => string | undefined): VapidKey
         .join(' ')}  (Edge Functions do not read .env.local.)`
     )
   }
+
+  // RFC 8292 §2.1 requires `sub` to be a URI, not a bare address — and the push
+  // services enforce it. Apple in particular answers a malformed `sub` with
+  // `403 {"reason":"BadJwtToken"}`, which reads exactly like a signature or key
+  // problem and sends you hunting through the crypto for a fault that is not
+  // there. Checking it here turns an afternoon of misdiagnosis into one sentence
+  // naming the actual mistake, which is the whole point of failing loudly.
+  if (!/^(mailto:|https:\/\/)/.test(subject!)) {
+    throw new Error(
+      `VAPID_SUBJECT must be a URI — "mailto:you@example.com" or "https://your.site", not a bare email address. ` +
+        `It is currently "${subject}". Fix it with: supabase secrets set VAPID_SUBJECT=mailto:${subject}`
+    )
+  }
+
   return { publicKey: publicKey!, privateKey: privateKey!, subject: subject! }
 }

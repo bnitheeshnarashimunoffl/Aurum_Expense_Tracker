@@ -77,8 +77,16 @@ VAPID keypair written to .env.local (gitignored — confirm with: git check-igno
 
 NEXT, three things:
 
-1. Set VAPID_SUBJECT in .env.local to "mailto:your-real-email@example.com".
-   Push services require a contact address and some of them check it.
+1. Set VAPID_SUBJECT in .env.local to a real address you own, and KEEP THE
+   "mailto:" PREFIX — it is part of the value, not instructions:
+
+       VAPID_SUBJECT=mailto:your-real-email@example.com      <- correct
+       VAPID_SUBJECT=your-real-email@example.com             <- rejected
+
+   RFC 8292 requires this claim to be a URI, and the push services enforce it.
+   Apple answers a bare address with 403 {"reason":"BadJwtToken"}, which looks
+   exactly like a broken signing key and is thoroughly misleading. An https://
+   URL you control works too.
 
 2. Push the private key and subject to Supabase as project secrets. Edge
    Functions do NOT read .env.local, so this step is not optional. Neither

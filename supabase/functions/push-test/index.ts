@@ -76,12 +76,22 @@ Deno.serve(async (req: Request) => {
       await supabase.from('meridian_push_subscriptions').delete().eq('endpoint', subscription.endpoint)
       failures.push('One device had expired and has been removed.')
     } else {
-      failures.push(`${result.status}: ${result.detail ?? 'unknown error'}`)
+      // Say WHOSE error this is. The bare `${status}: ${body}` this used to
+      // report was indistinguishable from a Supabase auth failure — an Apple
+      // rejection reading `403: {"reason":"BadJwtToken"}` looks for all the
+      // world like the Edge Function itself refusing the caller's JWT, and cost
+      // two wrong diagnoses before anyone looked at the VAPID subject. The push
+      // service is a third party; label it as one.
+      failures.push(`Push service rejected it (${result.status}): ${result.detail ?? 'unknown error'}`)
     }
   }
 
   if (delivered === 0) {
-    return json({ error: failures.join(' ') || 'Could not reach any device.' }, 502)
+    // De-duplicated: several stale subscriptions all failing the same way is one
+    // problem reported once, not the same sentence repeated per dead device.
+    const unique = [...new Set(failures)]
+    const suffix = subscriptions.length > 1 ? ` (${subscriptions.length} device subscriptions tried)` : ''
+    return json({ error: (unique.join(' ') || 'Could not reach any device.') + suffix }, 502)
   }
-  return json({ delivered, failures })
+  return json({ delivered, failures: [...new Set(failures)] })
 })
