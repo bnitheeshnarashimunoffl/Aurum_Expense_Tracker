@@ -45,6 +45,33 @@ async function countDirty(): Promise<number> {
   return t + p + s + b
 }
 
+/**
+ * The flag columns that are `boolean` in Postgres but `0 | 1` in IndexedDB.
+ *
+ * This gap is not cosmetic, and getting it wrong is silent. IndexedDB cannot
+ * index a boolean (see the note on `Flag` in types.ts, which is why these are
+ * integers locally), and every local read compares strictly — `t.is_active === 1`.
+ * A row pulled down carrying Postgres's `true` therefore lands in the database
+ * intact and then fails every single query that looks for it, because
+ * `true === 1` is false. The symptom is brutal to diagnose from the outside: the
+ * sync badge goes gold, the rows are visibly correct in Supabase, and the app
+ * insists you have no term at all.
+ *
+ * It is also the other half of the duplicate-term bug — createTerm() deactivates
+ * the previous term by looking for `is_active === 1`, so a pulled-down active
+ * term was invisible to it and a second "the" active term got created alongside.
+ */
+const FLAG_FIELDS = ['deleted', 'is_active', 'archived'] as const
+
+/** Supabase row -> local row. Normalises the booleans back into indexable 0/1. */
+function fromRemote(row: LocalRow): LocalRow {
+  const out = { ...row } as unknown as Record<string, unknown>
+  for (const field of FLAG_FIELDS) {
+    if (field in out) out[field] = out[field] ? 1 : 0
+  }
+  return out as unknown as LocalRow
+}
+
 /** Local row -> Supabase row. `dirty` is local bookkeeping and never leaves the device. */
 function toRemote<T extends { dirty: unknown }>(row: T, userId: string) {
   const { dirty: _dirty, ...rest } = row as T & Record<string, unknown>
@@ -66,12 +93,38 @@ function table(name: (typeof TABLES)[number]['local']) {
 
 let running = false
 
+const FLAG_REPAIR_KEY = 'flagTypesRepaired.v1'
+
+/**
+ * One-time local repair for rows an earlier build pulled down with Postgres
+ * booleans left in place (see fromRemote above for what that breaks).
+ *
+ * Re-pulling alone would not fix them: the pull only overwrites a local row when
+ * the remote copy is strictly NEWER, and these rows carry the exact same
+ * `updated_at` as the server's — they are not stale, just stored in the wrong
+ * type. So they have to be rewritten in place, locally, once.
+ *
+ * Purely local and network-free, which is why it runs before the offline check.
+ */
+async function repairFlagTypes(): Promise<void> {
+  if (await getMeta(FLAG_REPAIR_KEY)) return
+  for (const { local } of TABLES) {
+    for (const row of await table(local).toArray()) {
+      const record = row as unknown as Record<string, unknown>
+      const broken = FLAG_FIELDS.some((field) => field in record && typeof record[field] !== 'number')
+      if (broken) await table(local).put(fromRemote(row))
+    }
+  }
+  await setMeta(FLAG_REPAIR_KEY, new Date().toISOString())
+}
+
 /**
  * One full push-then-pull cycle. Safe to call at any time, including offline and
  * before the user is known — it just reports back what it could do.
  */
 export async function syncNow(): Promise<SyncState> {
   if (running) return currentState
+  await repairFlagTypes()
   pending = await countDirty()
 
   if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -128,7 +181,7 @@ export async function syncNow(): Promise<SyncState> {
         const localRow = await table(local).get(remoteRow.id)
         // Last-write-wins, and a local edit made since the remote write survives.
         if (!localRow || localRow.updated_at < remoteRow.updated_at) {
-          await table(local).put({ ...remoteRow, dirty: 0 })
+          await table(local).put({ ...fromRemote(remoteRow), dirty: 0 } as LocalRow)
         }
       }
     }
