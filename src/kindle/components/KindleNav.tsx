@@ -52,8 +52,10 @@ export default function KindleNav() {
         <NavLink
           key={item.to}
           to={item.to}
-          // Anchor for Kindle's walkthrough — see src/onboarding/steps.ts.
-          data-tour={item.to === '/kindle/history' ? 'kindle-history' : undefined}
+          // Anchors for Kindle's walkthrough — see src/onboarding/steps.ts.
+          data-tour={
+            item.to === '/kindle/history' ? 'kindle-history' : item.to === '/kindle/settings' ? 'kindle-settings' : undefined
+          }
           end={item.to === '/kindle'}
           className={({ isActive }) =>
             `flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-3 pb-2 text-[11px] ${

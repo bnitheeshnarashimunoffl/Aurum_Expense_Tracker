@@ -34,6 +34,11 @@ export default function KindleSheet({ open, onClose, title, children }: KindleSh
           />
           <motion.div
             className="kindle-glass fixed inset-x-0 bottom-0 z-50 max-h-[88vh] overflow-y-auto rounded-t-sheet pb-safe-bottom"
+            // dvh, unlike vh, shrinks when Android's soft keyboard opens (see the
+            // interactive-widget viewport meta in index.html), so a sheet with a text
+            // field in it stays fully reachable instead of being pushed behind it. The
+            // 88vh class above is the fallback wherever dvh is not understood.
+            style={{ maxHeight: '88dvh' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

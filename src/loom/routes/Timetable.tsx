@@ -15,6 +15,7 @@ import PresetEditorSheet, { type PresetDraft } from '../components/PresetEditorS
 import CopyToSaturdaySheet from '../components/CopyToSaturdaySheet'
 import SyncBadge from '../components/SyncBadge'
 import LoomIcon from '../components/LoomIcon'
+import ModuleEmptyState from '@/components/ModuleEmptyState'
 import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 export default function Timetable() {
@@ -93,10 +94,30 @@ export default function Timetable() {
     return (
       <div className="px-4 pt-4">
         <Header title="Loom" subtitle="No term yet" />
-        <div className="loom-neu-raised rounded-card px-5 py-8 text-center">
-          <p className="mb-1 text-sm text-loomInk">No term set up yet.</p>
-          <p className="text-xs text-loomMuted">Head to Terms to create your first semester.</p>
-        </div>
+        <ModuleEmptyState
+          tone="loom"
+          icon={<LoomIcon size={30} />}
+          title="Start with the semester"
+          body="A term is the shape everything else hangs off: its name, the dates it runs between, and the period times your day is actually divided into."
+          steps={[
+            <>
+              <span className="text-loomInk">Terms</span> — name the semester and set its dates.
+            </>,
+            <>
+              <span className="text-loomInk">Periods</span> — the times your classes run between. Yours, not a
+              default hour grid.
+            </>,
+            <>
+              <span className="text-loomInk">Classes</span> — save each one once, then drop it into the week.
+            </>,
+          ]}
+          action={{ label: 'Set up a term', to: '/loom/terms' }}
+        />
+        {/* Mounted HERE as well as in the main return, and that is the whole
+            point: before this build Loom's walkthrough lived only past this early
+            return, so a brand-new account — which is exactly who needs to be told
+            how terms and versioning work — could never reach it. */}
+        <ModuleWalkthrough module="loom" />
       </div>
     )
   }

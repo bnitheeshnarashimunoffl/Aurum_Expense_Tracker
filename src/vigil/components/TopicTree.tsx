@@ -9,6 +9,8 @@ interface TopicTreeProps {
   tree: CategoryNode[]
   onSetCompleted: (ids: string[], completed: boolean) => void
   onAddCategory: (label: string) => Promise<void>
+  /** Bumped by the empty state to open the category field. See InlineAdd.openToken. */
+  addCategoryToken?: number
   onAddSubject: (categoryId: string, label: string) => Promise<void>
   onAddSubtopic: (subjectId: string, label: string) => Promise<void>
   onDeleteCategory: (id: string) => void
@@ -201,6 +203,7 @@ export default function TopicTree({
   tree,
   onSetCompleted,
   onAddCategory,
+  addCategoryToken,
   onAddSubject,
   onAddSubtopic,
   onDeleteCategory,
@@ -238,7 +241,7 @@ export default function TopicTree({
       })}
 
       <div className="vigil-neu-raised rounded-card px-4 py-2">
-        <InlineAdd placeholder="Add category" onAdd={onAddCategory} />
+        <InlineAdd placeholder="Add category" onAdd={onAddCategory} openToken={addCategoryToken} />
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { canRecord, pickRecordingFormat, startLiveTranscription, type LiveTranscriber } from '../lib/audio'
+import { canRecord, extensionForMime, pickRecordingFormat, startLiveTranscription, type LiveTranscriber } from '../lib/audio'
 import type { FinishedRecording } from './useVoice'
 
 export type RecorderState = 'idle' | 'starting' | 'recording' | 'stopping' | 'unsupported' | 'denied'
@@ -83,8 +83,12 @@ export function useRecorder() {
     // carries no duration in its header, so reading it back gives Infinity.
     const durationSeconds = (performance.now() - startedAtRef.current) / 1000
 
+    // What the recorder settled on, which is not always what was asked for — the
+    // browser picks its own container whenever no candidate mime was supported.
+    const producedMime = recorder.mimeType || format?.mime || 'audio/webm'
+
     const blob = await new Promise<Blob>((resolve) => {
-      recorder.onstop = () => resolve(new Blob(chunksRef.current, { type: recorder.mimeType || format?.mime || 'audio/webm' }))
+      recorder.onstop = () => resolve(new Blob(chunksRef.current, { type: producedMime }))
       recorder.stop()
     })
 
@@ -94,7 +98,10 @@ export function useRecorder() {
     setState('idle')
     setElapsed(0)
 
-    return { blob, extension: format?.extension ?? 'webm', durationSeconds, liveTranscript }
+    // Derived from the blob's real type rather than from the format we hoped for.
+    // Whisper picks its demuxer from the filename, so this is what decides whether
+    // an Android recording transcribes at all. See extensionForMime().
+    return { blob, extension: extensionForMime(blob.type || producedMime), durationSeconds, liveTranscript }
   }, [teardown])
 
   /** Abandons the recording without producing anything to save. */

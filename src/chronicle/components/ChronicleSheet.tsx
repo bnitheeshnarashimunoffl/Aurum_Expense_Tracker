@@ -37,6 +37,8 @@ export default function ChronicleSheet({ open, onClose, title, teal = false, chi
           />
           <motion.div
             className={`${teal ? 'chr-glass-teal' : 'chr-glass'} fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[88vh] max-w-lg overflow-y-auto rounded-t-sheet pb-safe-bottom`}
+            // dvh tracks the keyboard-shrunk viewport on Android; the 88vh class is the fallback.
+            style={{ maxHeight: '88dvh' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

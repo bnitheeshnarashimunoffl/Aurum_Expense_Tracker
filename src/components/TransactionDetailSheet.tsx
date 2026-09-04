@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import BottomSheet from './BottomSheet'
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { deleteTransaction } from '@/hooks/useTransactions'
 import { formatDate } from '@/lib/format'
 import type { Category, Transaction } from '@/lib/types'

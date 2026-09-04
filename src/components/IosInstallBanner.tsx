@@ -5,14 +5,22 @@ import { isIOS, isStandalone } from '@/lib/push'
 const DISMISS_KEY = 'meridian.iosInstallDismissed'
 
 /**
- * Whether this device is the one case where notifications will silently do
- * nothing: iOS, running in a Safari tab rather than from the Home Screen.
+ * Whether this device is iOS running in a Safari tab rather than from the Home
+ * Screen.
  *
- * Safari has supported Web Push since 16.4, but only for an installed PWA. In a
- * tab the APIs are simply absent, so permission can never be granted and no
- * error is ever raised — which makes this the single most confusing failure in
- * the whole feature, and the reason it gets a designed explanation rather than a
- * console warning.
+ * WHAT THIS BANNER IS ABOUT NOW. It used to be a notifications banner: Safari has
+ * supported Web Push since 16.4, but only for an installed PWA, so in a tab the
+ * APIs are simply absent and permission can never be granted. Since notifications
+ * are not available to shared instances at all, that is no longer the reason most
+ * people are seeing it — and a banner that promises notifications to someone who
+ * will not get them is worse than no banner.
+ *
+ * It stays, because installing is worth doing on its own merits: full screen with
+ * no Safari chrome eating the top and bottom of every module, a real icon, proper
+ * safe-area handling, and a tab iOS cannot quietly evict. The copy now says that
+ * instead. The notifications sentence is still available behind `reason`, for the
+ * one place it is still true — the owner's Settings screen, where this is the
+ * explanation for a toggle that cannot be turned on.
  */
 export function useIosInstallGate() {
   const needed = isIOS() && !isStandalone()
@@ -68,6 +76,15 @@ interface IosInstallBannerProps {
    * turned on rather than an interruption.
    */
   variant?: 'floating' | 'inline'
+  /**
+   * Why the user is being shown this.
+   *
+   * `experience` is the default and the honest one for almost everybody: an
+   * installed Meridian is simply a better Meridian. `notifications` is only used
+   * where push is genuinely available and genuinely blocked by not being
+   * installed — which since the public release means the owner's account alone.
+   */
+  reason?: 'experience' | 'notifications'
   onDismiss?: () => void
 }
 
@@ -76,8 +93,16 @@ interface IosInstallBannerProps {
  * can match it against the real toolbar. Deliberately not an alert(): this is a
  * three-tap fix, and a system dialog would make it read like an error.
  */
-export default function IosInstallBanner({ variant = 'inline', onDismiss }: IosInstallBannerProps) {
+export default function IosInstallBanner({ variant = 'inline', reason = 'experience', onDismiss }: IosInstallBannerProps) {
   const reduceMotion = useReducedMotion()
+  const lede =
+    reason === 'notifications'
+      ? 'On iPhone and iPad, notifications only reach an installed app — never a Safari tab. Three taps:'
+      : 'Meridian opens full screen with its own icon, instead of inside Safari. Three taps:'
+  const closer =
+    reason === 'notifications'
+      ? 'Then open Meridian from the new icon and turn notifications on there.'
+      : 'Everything stays exactly where it is — same account, same data, more screen.'
 
   const body = (
     <div
@@ -92,9 +117,7 @@ export default function IosInstallBanner({ variant = 'inline', onDismiss }: IosI
         </span>
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-sm font-semibold text-primary">Add Meridian to your Home Screen</h3>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
-            On iPhone and iPad, notifications only reach an installed app — not a Safari tab. Three taps:
-          </p>
+          <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{lede}</p>
           <ol className="mt-2.5 space-y-1.5 text-[12.5px] text-primary">
             {[
               <>
@@ -115,7 +138,7 @@ export default function IosInstallBanner({ variant = 'inline', onDismiss }: IosI
               </li>
             ))}
           </ol>
-          <p className="mt-2.5 text-[11.5px] text-muted">Then open Meridian from the new icon and turn notifications on there.</p>
+          <p className="mt-2.5 text-[11.5px] text-muted">{closer}</p>
         </div>
       </div>
 

@@ -7,3 +7,8 @@ dist-ssr
 .DS_Store
 *.log
 .vite
+
+# Supabase CLI scratch state. Not secret in itself, but it records the linked
+# project ref, the organisation id and the pooler connection string — none of
+# which a public repository needs to carry.
+supabase/.temp/

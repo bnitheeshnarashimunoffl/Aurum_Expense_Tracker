@@ -9,6 +9,18 @@
 --   <CRON_SECRET>  the exact same string you passed to
 --                  `supabase secrets set CRON_SECRET=...`
 --
+-- !! NEVER COMMIT THE REAL VALUES. !!
+--
+-- push-dispatch is deployed with --no-verify-jwt, so CRON_SECRET is the ONLY
+-- thing standing between the function's URL and anyone who wants to make it
+-- send. An earlier revision of this file carried a real secret, and it is
+-- therefore in this repository's git history forever — rotating it is what makes
+-- that copy worthless, and the rotation steps are in SETUP.md under
+-- "Rotating the cron secret". Do that before the app is shared with anyone.
+--
+-- Fill the two values in, run the file, then UNDO your edit before committing —
+-- or keep the filled-in copy outside the repo entirely.
+--
 -- WHY EVERY MINUTE: Loom's reminders are "30 minutes before the class starts",
 -- and a class can start at any minute. An hourly cron could only ever be right
 -- for classes on the hour. Running each minute also means one skipped tick is
@@ -25,8 +37,8 @@ create extension if not exists pg_net with schema extensions;
 
 do $cron$
 declare
-  project_ref text := 'bbmuhjulcctatmwsjzgc';
-  cron_secret text := 'SomethingThatMakesItWorkIsEnough';
+  project_ref text := '<PROJECT_REF>';
+  cron_secret text := '<CRON_SECRET>';
 begin
   -- Unschedule first so re-running this file updates the job instead of failing.
   perform cron.unschedule('meridian-push-dispatch')

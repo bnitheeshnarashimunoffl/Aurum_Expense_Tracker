@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import BottomSheet from './BottomSheet'
 import PresetChip from './PresetChip'
 import Toast from './Toast'
@@ -9,7 +10,7 @@ import { usePresets } from '@/hooks/usePresets'
 import { addTransaction, updateTransaction } from '@/hooks/useTransactions'
 import { useToast } from '@/hooks/useToast'
 import { compressImage } from '@/lib/image'
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { todayISO } from '@/lib/format'
 import type { PaymentMode, TxType } from '@/lib/types'
 
@@ -227,6 +228,26 @@ export default function AddTransactionSheet({ open, onClose }: AddTransactionShe
 
           <div>
             <label className="mb-1.5 block text-sm text-muted">Category</label>
+            {/* Aurum ships with no categories — a stock list of somebody else's
+                spending is worse than none — so this is the real first-run state
+                of this sheet, not a defensive branch. It has to name the way out,
+                because there is no other control here that leads anywhere. */}
+            {categoryTree.length === 0 ? (
+              <div className="neu-pressed rounded-card px-4 py-4">
+                <p className="text-[13px] leading-relaxed text-muted">
+                  You have no {type === 'income' ? 'income' : 'expense'} categories yet. Aurum starts empty on
+                  purpose — the first one takes about ten seconds.
+                </p>
+                <Link
+                  to="/aurum/settings"
+                  onClick={onClose}
+                  className="mt-3 flex min-h-[44px] w-full items-center justify-center rounded-card text-[13.5px] font-semibold text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  style={{ background: 'var(--accent)' }}
+                >
+                  Make a category
+                </Link>
+              </div>
+            ) : (
             <div className="flex flex-wrap gap-2">
               {categoryTree.map(({ parent, children }) =>
                 children.length > 0 ? (
@@ -259,6 +280,7 @@ export default function AddTransactionSheet({ open, onClose }: AddTransactionShe
                 )
               )}
             </div>
+            )}
           </div>
 
           <div className="flex gap-3">

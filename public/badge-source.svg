@@ -1,0 +1,26 @@
+<!--
+  The Android status-bar badge, and it has to be a different drawing from the app
+  icon.
+
+  Android does not render the badge in colour. It takes the alpha channel and
+  stamps it in a single system colour, which means a badge with no transparency
+  comes out as a solid filled blob — which is exactly what pwa-192.png (flattened
+  onto an opaque ground so iOS home-screen icons are legal) would produce.
+
+  So this is the same sun-over-a-horizon motif, drawn as pure white on nothing,
+  with the mark kept well inside the frame because Android crops the badge to a
+  circle. Line weights are deliberately heavy: at 24dp in a status bar, hairlines
+  disappear entirely.
+-->
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="#ffffff" stroke-linecap="round">
+    <!-- The horizon. -->
+    <line x1="20" y1="62" x2="76" y2="62" stroke-width="7" />
+    <!-- The sun, sitting on it. -->
+    <circle cx="48" cy="43" r="15" fill="#ffffff" stroke="none" />
+    <!-- Two rays, enough to read as light without turning to mush at 24dp. -->
+    <line x1="48" y1="14" x2="48" y2="21" stroke-width="6" />
+    <line x1="26" y1="24" x2="31" y2="29" stroke-width="6" />
+    <line x1="70" y1="24" x2="65" y2="29" stroke-width="6" />
+  </g>
+</svg>

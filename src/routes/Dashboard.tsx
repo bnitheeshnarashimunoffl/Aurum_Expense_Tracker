@@ -12,6 +12,7 @@ import { useAllTimeBalance } from '@/hooks/useAllTimeBalance'
 import { startOfMonthISO, startOfWeekISO, todayISO } from '@/lib/format'
 import type { Scope, Period, Transaction } from '@/lib/types'
 import TransactionDetailSheet from '@/components/TransactionDetailSheet'
+import ModuleEmptyState from '@/components/ModuleEmptyState'
 import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 export default function Dashboard() {
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<Period>('month')
   const [selected, setSelected] = useState<Transaction | null>(null)
 
-  const { categories } = useCategories()
+  const { categories, loading: categoriesLoading } = useCategories()
   const categoryById = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories])
 
   const monthStart = startOfMonthISO()
@@ -91,6 +92,68 @@ export default function Dashboard() {
   }, [budgets, monthTransactions, categoryById])
 
   const recent = periodTransactions.slice(0, 10)
+
+  /**
+   * Aurum's first run.
+   *
+   * Nothing can be logged until a category exists, so the dial reading zero over
+   * two empty donuts is not a dashboard — it is four pieces of furniture around a
+   * thing you cannot do yet. This replaces the lot with the one action that
+   * unblocks it, and disappears the moment a single category exists.
+   *
+   * Waits for `categoriesLoading` first: flashing "you have no categories" at
+   * somebody who has forty is a worse error than the one it prevents.
+   */
+  if (!categoriesLoading && categories.length === 0) {
+    return (
+      <div className="px-4 pt-4">
+        <header className="relative mb-6 flex min-h-[44px] items-center">
+          <h1 className="font-display pointer-events-none absolute inset-x-0 text-center text-2xl font-bold text-primary">
+            Aurum
+          </h1>
+        </header>
+
+        <ModuleEmptyState
+          tone="aurum"
+          icon={
+            <svg width="30" height="30" viewBox="0 0 34 34" fill="none" aria-hidden>
+              <circle cx="17" cy="17" r="15" fill="var(--bg-base)" />
+              <circle
+                cx="17"
+                cy="17"
+                r="12"
+                fill="none"
+                stroke="var(--accent)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeDasharray="56 75.5"
+                transform="rotate(-90 17 17)"
+              />
+            </svg>
+          }
+          title="Start with a category or two"
+          body="Aurum has none to begin with, deliberately — a stock list of someone else's spending is worse than an empty one. Make the few you actually use and everything else follows from them."
+          steps={[
+            <>
+              <span className="text-primary">Categories</span> — what your money goes on. Two or three is plenty to
+              start.
+            </>,
+            <>
+              <span className="text-primary">Log something</span> — the brass + at the bottom, about four seconds a
+              time.
+            </>,
+            <>
+              <span className="text-primary">Budgets</span> — optional, and only worth it once you know what you
+              spend.
+            </>,
+          ]}
+          action={{ label: 'Make your first category', to: '/aurum/settings' }}
+        />
+
+        <ModuleWalkthrough module="aurum" />
+      </div>
+    )
+  }
 
   return (
     <div className="px-4 pt-4">

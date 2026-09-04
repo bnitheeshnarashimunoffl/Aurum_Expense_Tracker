@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useDataConnection } from '@/context/DataContext'
 import { subscribe, notify } from '@/lib/sync'
 
 const CHANNEL = 'meridian_notification_settings'
@@ -17,10 +18,29 @@ export interface NotificationSettings {
   virtus_gym: boolean
   chronicle_todos: boolean
   timezone: string
+  /**
+   * True when this account's module data lives in a Supabase project the push
+   * server cannot read — which since the public release is everyone but the
+   * owner. The dispatcher branches on it: some reminders lose their numbers, and
+   * the two that ARE their data (Loom's classes, Chronicle's due list) are not
+   * sent at all. Written by the client on every save rather than guessed at
+   * server-side, because the client is the only thing that knows.
+   */
+  external_data: boolean
 }
 
-export type ModuleToggle = Exclude<keyof NotificationSettings, 'enabled' | 'timezone'>
+export type ModuleToggle = Exclude<keyof NotificationSettings, 'enabled' | 'timezone' | 'external_data'>
 
+/**
+ * Only ever rendered for an account whose data the dispatcher can actually read —
+ * which since the public release means the owner's.
+ *
+ * There used to be a second "externalDetail" copy on each of these, describing
+ * what the reminder became when the server could not see the data behind it. That
+ * whole idea is gone: shared instances get no notifications rather than vaguer
+ * ones, and the settings screen says so in one panel instead of five hedged
+ * switches. See the header of supabase/functions/push-dispatch/index.ts.
+ */
 export const MODULE_TOGGLES: { key: ModuleToggle; module: string; label: string; detail: string }[] = [
   { key: 'kindle_water', module: 'Kindle', label: 'Water reminders', detail: 'Hourly, 6am to 11pm. Silent overnight.' },
   { key: 'vigil_study', module: 'Vigil', label: 'Study check-ins', detail: 'Every two hours, and nothing once the five hours are done.' },
@@ -37,6 +57,7 @@ const DEFAULTS: NotificationSettings = {
   virtus_gym: true,
   chronicle_todos: true,
   timezone: 'Asia/Kolkata',
+  external_data: false,
 }
 
 function currentTimeZone(): string {
@@ -62,6 +83,7 @@ export function useNotificationSettings() {
   const [exists, setExists] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { status: dataStatus } = useDataConnection()
 
   const refresh = useCallback(async () => {
     const { data, error: queryError } = await supabase.from('meridian_notification_settings').select('*').limit(1)
@@ -91,7 +113,18 @@ export function useNotificationSettings() {
       const { data: userData } = await supabase.auth.getUser()
       if (!userData.user) throw new Error('Not signed in')
 
-      const next = { ...settings, ...patch, timezone: currentTimeZone() }
+      // external_data describes where the data IS, not something the user chose,
+      // so it is stamped from the live connection rather than taken from the form.
+      // Only once that connection has actually settled, though: writing it while
+      // the client is still opening would mark the owner's own row as external
+      // and quietly strip the numbers out of their notifications.
+      const settled = dataStatus !== 'idle' && dataStatus !== 'connecting'
+      const next = {
+        ...settings,
+        ...patch,
+        timezone: currentTimeZone(),
+        ...(settled ? { external_data: dataStatus !== 'owner' } : {}),
+      }
       setSettings(next) // Optimistic: a toggle that lags behind the thumb feels broken.
 
       const { error: upsertError } = await supabase.from('meridian_notification_settings').upsert(
@@ -105,7 +138,7 @@ export function useNotificationSettings() {
       setExists(true)
       notify(CHANNEL)
     },
-    [settings, refresh]
+    [settings, refresh, dataStatus]
   )
 
   return { settings, exists, loading, error, save, refresh, deviceTimeZone: currentTimeZone() }

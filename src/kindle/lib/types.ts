@@ -40,24 +40,35 @@ export interface DefaultHabitConfig {
   palette_key: string | null
 }
 
-// Study's target was revised from 6 to 5 hours in the multi-stage revision (Part 2's
-// stage table is authoritative for this pass) — the seeded label reflects the new target.
+/**
+ * The three habits a brand-new Kindle starts with.
+ *
+ * Kindle is the ONE module that ships with anything in it, and the reason is that
+ * an empty 8×7 grid does not read as "add a habit" — it reads as broken. A grid
+ * is a shape made of its contents; with none, there is nothing on screen to
+ * explain what the shape is for.
+ *
+ * The spread is the point, not the habits. One binary (Gym: tapped or not) and
+ * two multi-stage on different ranges (Sleep 1–8, Study 1–5) demonstrate the
+ * whole habit model in one glance — that a day can be partly done, and that
+ * "partly" means different amounts for different things. A walkthrough would need
+ * three paragraphs to say what three rows of the grid say by themselves.
+ *
+ * Everything ELSE this list used to carry — water, baths, protein, skincare,
+ * processed foods — was one person's routine, and was removed for the public
+ * release. These three are examples, the Kindle walkthrough says so out loud, and
+ * all of them can be renamed, retargeted or deleted in Settings.
+ *
+ * Existing accounts are untouched: ensureDefaultHabitsSeeded() only ever runs
+ * against a habits table with zero rows in it.
+ */
 export const DEFAULT_HABITS: DefaultHabitConfig[] = [
-  { label: 'Water intake (4 litres/day)', type: 'multi_stage', max_stage: 4, target_value: 4, target_unit: 'litres', palette_key: null },
   { label: 'Gym', type: 'binary', max_stage: 1, target_value: null, target_unit: null, palette_key: null },
+  // The "(N hours)" suffix is the module's convention, not decoration:
+  // shortHabitLabel() strips it for the pill, so the name stays short there while
+  // the log sheet still shows "Target: 8 hours".
   { label: 'Sleep (8 hours)', type: 'multi_stage', max_stage: 8, target_value: 8, target_unit: 'hours', palette_key: null },
   { label: 'Study (5 hours)', type: 'multi_stage', max_stage: 5, target_value: 5, target_unit: 'hours', palette_key: null },
-  { label: 'Skincare routine', type: 'binary', max_stage: 1, target_value: null, target_unit: null, palette_key: null },
-  { label: 'Baths (two/day)', type: 'multi_stage', max_stage: 2, target_value: 2, target_unit: 'baths', palette_key: 'baths' },
-  {
-    label: 'Protein intake (100g/day, natural sources)',
-    type: 'multi_stage',
-    max_stage: 4,
-    target_value: 100,
-    target_unit: 'grams',
-    palette_key: null,
-  },
-  { label: 'Avoiding processed foods', type: 'binary', max_stage: 1, target_value: null, target_unit: null, palette_key: null },
 ]
 
 /**

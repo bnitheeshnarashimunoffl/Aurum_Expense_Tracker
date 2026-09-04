@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import { isOwnerMode } from '@/lib/dataClient'
 
 /**
  * Everything the browser side of Web Push needs, and — just as importantly —
@@ -74,7 +75,14 @@ async function readyRegistration(timeoutMs = 6000): Promise<ServiceWorkerRegistr
           () =>
             reject(
               new PushSetupError(
-                'No service worker is running. Notifications need a built app — try `npm run build && npm run preview`, or the deployed site.'
+                // Two audiences, two sentences. In development this is almost
+                // always "you are on the dev server, which has no worker", and
+                // saying so saves ten minutes. On the public deployment a visitor
+                // can do nothing with that fact, and describing how the app is
+                // built is noise at best and an invitation at worst.
+                import.meta.env.DEV
+                  ? 'No service worker is running. Notifications need a built app — try `npm run build && npm run preview`.'
+                  : 'Notifications are not ready on this device yet. Close Meridian, open it again, and try once more.'
               )
             ),
           timeoutMs
@@ -139,9 +147,22 @@ export class PushSetupError extends Error {}
  * settings screen showing a toggle that quietly did nothing.
  */
 export async function enablePush(): Promise<void> {
+  // The hard stop for accounts whose data lives in their own Supabase project.
+  //
+  // The dispatcher will not send to them, so asking the browser for permission
+  // would open a system dialog for a capability that does nothing — the single
+  // worst version of this, because a permission prompt is a promise, and a denied
+  // one can only be undone in OS settings. The Settings screen never offers this
+  // path to them; this is the backstop that makes it impossible rather than
+  // merely unoffered.
+  if (!isOwnerMode()) {
+    throw new PushSetupError('Notifications are not available for shared instances yet.')
+  }
   if (!vapidConfigured()) {
     throw new PushSetupError(
-      'VITE_VAPID_PUBLIC_KEY is not set. Run `npm run vapid`, then add it to .env.local and to your deploy environment.'
+      import.meta.env.DEV
+        ? 'VITE_VAPID_PUBLIC_KEY is not set. Run `npm run vapid`, then add it to .env.local and to your deploy environment.'
+        : 'Notifications are not available right now.'
     )
   }
   if (!browserSupportsPush()) {
@@ -247,8 +268,9 @@ export async function sendTestNotification(): Promise<void> {
     const detail = context ? await context.json().catch(() => null) : null
     throw new PushSetupError(
       detail?.error ??
-        error.message ??
-        'Could not reach the push-test function. Deploy it with: supabase functions deploy push-test'
+        (import.meta.env.DEV
+          ? (error.message ?? 'Could not reach the push-test function. Deploy it with: supabase functions deploy push-test')
+          : 'Could not send a test right now. Try again in a moment.')
     )
   }
   if (data && typeof data === 'object' && 'error' in data) {

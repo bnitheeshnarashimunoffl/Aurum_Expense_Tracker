@@ -105,7 +105,7 @@ deploying to Vercel), written for someone who's never used either service.
 | `npm run build`    | Type-check, then build for production            |
 | `npm run preview`  | Preview the production build locally             |
 | `npm run lint`     | Type-check only (`tsc --noEmit`)                 |
-| `npm run icons`    | Regenerate PWA/app icons from `public/icon-source.svg` |
+| `npm run icons`    | Regenerate PWA/app icons from `public/icon-source.svg`, plus the transparent Android notification badge from `public/badge-source.svg` |
 | `npm run vapid`    | Generate the Web Push VAPID keypair into `.env.local` (see [SETUP.md §11](./SETUP.md)) |
 
 ## Project structure
@@ -126,3 +126,31 @@ supabase/
 
 Deploys as a static site to Vercel (or any static host) — see
 [SETUP.md](./SETUP.md) for the full deployment and home-screen-install guide.
+
+## Two Supabase projects, not one
+
+Since the public release, Meridian splits authentication from data, and this is
+the thing to understand before reading any of the code.
+
+| | Auth project | Data project |
+| --- | --- | --- |
+| Whose | The developer's, fixed at build time | The user's own, created by them for free |
+| Holds | `auth.users` and four small platform tables (push subscriptions, notification settings, the send log, walkthrough state) | Every table of all six modules, and both storage buckets |
+| Client | `src/lib/supabase.ts` → `supabase` / `authClient` | `src/lib/dataClient.ts` → `db` |
+
+Sign-in runs through the developer's project so real signup numbers are visible
+in their dashboard; auth rows are tiny and cost nothing. Everything a person
+actually writes goes to a database they own, on their own free tier.
+
+**Which client to import** — auth, sessions, notifications, walkthroughs and Edge
+Functions use `@/lib/supabase`; anything a module stores uses `@/lib/dataClient`.
+`db` is a Proxy whose target is decided at runtime: for the owner it *is* the
+auth client, for everyone else it is a second client signed in to their project.
+
+Users connect theirs through a six-step in-app walkthrough (`src/setup/`) that
+never asks them to open a terminal, clone anything, or edit a file. The script
+they paste is `supabase/user_setup.sql`, imported into the walkthrough with
+`?raw` so there is exactly one copy of the schema and it cannot drift.
+
+Full architecture, the owner bypass, and what changes about notifications and
+voice transcription: **[SETUP.md §12](./SETUP.md)**.

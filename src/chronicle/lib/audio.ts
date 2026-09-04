@@ -27,6 +27,52 @@ export function pickRecordingFormat(): { mime: string; extension: string } | nul
   return { mime: '', extension: 'webm' }
 }
 
+/**
+ * The right file extension for whatever the recorder ACTUALLY produced.
+ *
+ * This is not the same question as pickRecordingFormat(), and the difference is
+ * a real bug on Android. When no candidate is supported the recorder is started
+ * with no mimeType at all and the browser picks its own — Chrome on Android
+ * lands on WebM, Samsung Internet has been known to produce MP4 — and asking
+ * pickRecordingFormat() again afterwards returns the guess, not the answer.
+ * Whisper chooses its demuxer from the filename, so a WebM named .m4a (or the
+ * reverse) fails to transcribe on one platform and works on the other, which is
+ * exactly the kind of fault that only shows up on the device nobody has.
+ *
+ * MediaRecorder.mimeType is authoritative once recording has begun, so it is
+ * what the saved filename is built from.
+ */
+export function extensionForMime(mime: string | undefined | null): string {
+  const type = (mime ?? '').toLowerCase().split(';')[0].trim()
+  switch (type) {
+    case 'audio/webm':
+    case 'video/webm':
+      return 'webm'
+    case 'audio/mp4':
+    case 'video/mp4':
+    case 'audio/x-m4a':
+    case 'audio/aac':
+      return 'm4a'
+    case 'audio/ogg':
+    case 'audio/ogg;codecs=opus':
+      return 'ogg'
+    case 'audio/mpeg':
+      return 'mp3'
+    case 'audio/wav':
+    case 'audio/wave':
+    case 'audio/x-wav':
+      return 'wav'
+    case 'audio/flac':
+      return 'flac'
+    default:
+      // Every format Groq's Whisper endpoint accepts is covered above. An unknown
+      // one is almost certainly WebM (the only container a browser reaches for
+      // without being asked), and guessing it is better than sending no extension
+      // at all, which Whisper rejects outright.
+      return 'webm'
+  }
+}
+
 export function canRecord(): boolean {
   return (
     typeof navigator !== 'undefined' &&

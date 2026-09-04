@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { notify, subscribe } from '@/lib/sync'
 import { setsForExercise } from '../lib/volume'
 import type { LoggedSet, Session, SessionWithSets } from '../lib/types'

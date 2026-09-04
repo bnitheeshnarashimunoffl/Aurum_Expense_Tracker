@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { notify, subscribe } from '@/lib/sync'
 import { currentUserId } from '../lib/media'
 import type { LinkTarget, TodoLink } from '../lib/types'

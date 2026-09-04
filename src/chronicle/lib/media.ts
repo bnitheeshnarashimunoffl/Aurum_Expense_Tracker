@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 
 /**
  * Storage helpers for Chronicle's two kinds of file: voice audio and images
@@ -37,6 +37,21 @@ export async function uploadImage(file: File): Promise<string> {
   })
   if (error) throw error
   return path
+}
+
+/**
+ * Pulls an audio file back out of the bucket as a Blob.
+ *
+ * Needed because the transcription Edge Function lives in Meridian's project and
+ * the audio does not: once a user's files are in their OWN Supabase project, the
+ * function cannot reach into it, so the browser — which is signed in to both —
+ * fetches the file and posts it up itself. Returns null rather than throwing; a
+ * missing file is a failed transcription, not a crashed screen.
+ */
+export async function downloadAudio(path: string): Promise<Blob | null> {
+  const { data, error } = await supabase.storage.from(BUCKET).download(path)
+  if (error || !data) return null
+  return data
 }
 
 export async function signedUrl(path: string): Promise<string | null> {

@@ -72,7 +72,9 @@ export default function BottomNav({ onAddClick }: { onAddClick: () => void }) {
       key={item.to}
       to={item.to}
       // Anchors for Aurum's walkthrough — see src/onboarding/steps.ts.
-      data-tour={item.to === '/aurum/budgets' ? 'aurum-budgets' : undefined}
+      data-tour={
+        item.to === '/aurum/budgets' ? 'aurum-budgets' : item.to === '/aurum/settings' ? 'aurum-settings' : undefined
+      }
       end={item.to === '/aurum'}
       className={({ isActive }) =>
         `flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 px-3 pb-2 text-[11px] ${

@@ -2,7 +2,24 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!--
+      viewport-fit=cover  — lets the page paint under the notch and the gesture bar,
+        which is what every `env(safe-area-inset-*)` in this app depends on. Needed
+        on Android as well as iOS: a Samsung with a punch-hole camera and on-screen
+        navigation has insets too.
+
+      interactive-widget=resizes-content — the Android fix, and it has no effect on
+        iOS. By default Chrome does NOT shrink the layout viewport when the soft
+        keyboard opens, so a `position: fixed; bottom: 0` bottom sheet stays pinned
+        to the bottom of a viewport that is now behind the keyboard — which is
+        every sheet in Meridian, and the input you are typing into with it. This
+        makes the keyboard resize the layout viewport instead, so sheets sit above
+        it and `dvh` units track the space that is actually visible.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#C9A46A" />
     <meta name="description" content="Meridian — a personal app shell, starting with the Aurum finance tracker." />
     <link rel="icon" type="image/png" sizes="192x192" href="/icons/pwa-192.png" />

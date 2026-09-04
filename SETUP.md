@@ -518,3 +518,468 @@ In order, because each step rules out the ones below it:
    off and on again on that device.
 6. **Is the timezone right?** **Table Editor → meridian_notification_settings**,
    `timezone` column. It is rewritten every time you save a setting.
+
+---
+
+# 12. Going public — bring-your-own-Supabase
+
+This is the section that changed everything else. Read it before touching
+anything in `supabase/`.
+
+## 12.1 What the architecture actually is
+
+Meridian now talks to **two** Supabase projects.
+
+| | Auth project (yours) | Data project (theirs) |
+| --- | --- | --- |
+| Set by | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` at build time | Pasted by the user into the setup walkthrough, stored in their browser |
+| Holds | `auth.users`, `meridian_push_subscriptions`, `meridian_notification_settings`, `meridian_notification_log`, `meridian_walkthroughs` | Every table of all six modules, plus both storage buckets |
+| Client | `src/lib/supabase.ts` → `supabase` / `authClient` | `src/lib/dataClient.ts` → `db` |
+
+Sign-up, sign-in, sessions and password reset all still run through **your**
+project, unchanged, which is what makes the user count in your dashboard real.
+Auth rows are tiny; other people signing up will not exhaust the free tier.
+
+Everything a user actually writes goes to a project they created, on their own
+free tier, and never touches yours.
+
+### Why there is a second sign-in
+
+Every RLS policy in the schema is `auth.uid() = user_id`. `auth.uid()` comes out
+of the JWT Postgres was handed, and a JWT is only trusted by the project that
+signed it — yours means nothing to theirs. So after the user pastes their
+credentials, Meridian creates and signs in to a **second account inside their own
+project**, and it is that account's uid that owns their rows.
+
+The password for that second account is **derived, never stored**: SHA-256 over
+the Meridian user id and the project ref (`derivePassword` in
+`src/lib/dataClient.ts`). That is what makes a second device work — paste the same
+two values and the same password falls out — with nothing secret written down.
+
+## 12.2 Your own account is exempt
+
+`VITE_OWNER_EMAIL` is how. An account whose email matches it skips the setup flow
+entirely, and its data client **is** the auth client — the same object. Nothing
+about your day-to-day use changes and none of your existing data moves.
+
+**You must set this in two places, or the deployed app will ask you, the
+developer, to paste in Supabase credentials:**
+
+1. `.env.local` — already added for you, using the address on this machine.
+   **Check it is the address you actually sign in to Meridian with.**
+2. Vercel → your project → Settings → Environment Variables → add
+   `VITE_OWNER_EMAIL` with the same value, for Production, Preview and
+   Development → Redeploy.
+
+`VITE_OWNER_USER_ID` (Authentication → Users → click yourself → User UID) works
+as an alternative if you would rather not put an address in the bundle. Either is
+enough; neither is a secret, because the match is against an email Supabase Auth
+issued and nobody else can claim.
+
+## 12.3 Run the migration on your own project
+
+Once, in **your** project's SQL editor: `supabase/public_release_migration.sql`.
+
+It does exactly two things, and touches no existing row:
+
+* adds `meridian_notification_settings.external_data`, which the push dispatcher
+  now **filters on** — accounts marked true are excluded from dispatch entirely
+  (see 12.5);
+* drops the `on_auth_user_created` trigger, so a stranger signing up no longer
+  writes eleven pointless Aurum category rows into your database. Your own
+  categories were seeded when you first signed up and are untouched — the trigger
+  only ever ran on INSERT.
+
+That trigger is no longer installed in the user's project either. `user_setup.sql`
+now drops it rather than creating it — see 12.9 for why, and for what the setup
+script does and does not put in a new account.
+
+## 12.4 What the user does — and what they never do
+
+`supabase/user_setup.sql` is the whole of it. The app **shows them that file** —
+`src/setup/SetupFlow.tsx` imports it with `?raw`, so there is one copy and it can
+never drift from the schema — with a copy button.
+
+Six screens, all of them clicking and pasting in a browser:
+
+1. why their data is theirs, and that the credentials live on that device only
+2. create a free Supabase project
+3. copy the script → SQL Editor → New query → paste → Run
+4. Authentication → Sign In / Providers → Email → **Confirm email off** → Save
+5. Project Settings → API Keys → copy the Project URL and the anon/public key
+6. paste both, press Test Connection
+
+**No terminal, no clone, no editor, no install, at any point.** If you ever
+change the schema, change `supabase/user_setup.sql` and the app shows the new
+version automatically.
+
+### The confirm-email step, and its safety net
+
+Step 4 exists because Meridian creates that second account in their project, and
+a project with "Confirm email" on will not let it sign in until an email nobody
+will ever open is answered.
+
+People skip steps. So the setup script also installs
+`public.meridian_confirm_signup(text)`, and the client calls it if sign-up comes
+back without a session. It only ever touches an account created in the **last
+fifteen minutes** that has **never been confirmed**, so it cannot be used to take
+over an existing one. Belt and braces: if that function is blocked for any
+reason, the toggle in step 4 is what makes it work.
+
+### One connection per account, per device
+
+The saved credentials carry the Meridian user id that saved them. A phone gets
+handed around; without that, signing out and letting somebody else sign in would
+leave their session pointed at the first person's database. A connection that
+does not match the signed-in account is treated as no connection at all, and the
+new person is sent to set up their own.
+
+## 12.5 Notifications: off for everyone but you
+
+**Shared instances get no push notifications at all.** Not degraded ones — none.
+
+`meridian_notification_settings.external_data` marks accounts whose module data
+the dispatcher cannot read, which is everyone but you, and `push-dispatch` now
+filters them out in its opening query:
+
+```sql
+.eq('enabled', true)
+.eq('external_data', false)
+```
+
+### Why not the degraded version
+
+An earlier revision did try to send those accounts a stripped-down set: the water
+reminder without the day's total, the study check-in without the hours, the gym
+question without knowing whether the gym had already happened — and Loom's class
+reminders and Chronicle's due-today list not sent at all, because those two *are*
+their data.
+
+That was the wrong call. Every one of those notifications exists to say something
+specific about your day; without the specifics they become the generic
+"Reminder!" the whole copy file was written to avoid. Three visibly stupider
+reminders plus two silent absences reads as a broken app. A clearly-labelled
+"not available yet" reads as a considered one.
+
+### What those users see
+
+The notifications section in Settings stays — a missing section reads as a bug —
+and shows one panel instead of six switches:
+
+> **Not available for shared instances yet**
+> Reminders have to read your data to be worth sending — how much water you have
+> logged, which class is next, what is due today. Your data is in your own
+> Supabase project, and the server that would send them cannot reach into it.
+
+Deliberately not "coming soon" or "under development", neither of which is a date
+anyone has promised.
+
+`enablePush()` also refuses outright for a non-owner account
+(`src/lib/push.ts`). That is the backstop that matters most: a browser permission
+prompt is a promise, a denied one can only be undone in OS settings, and asking
+for it to power something that does nothing is the worst version of this. The
+Settings screen never offers the path; the guard makes it impossible.
+
+**Your own account is untouched.** Every reminder still fires on its own schedule
+with its real numbers in it.
+
+### The iOS install banner, since it was a notifications banner
+
+It stays, and it now says something else. Installing was only ever pitched as the
+way to get notifications on iOS; for almost everyone that is no longer a reason.
+It is still worth doing on its own — full screen instead of Safari's chrome eating
+both ends of every module, a real icon, and a tab iOS cannot quietly evict — so
+the copy leads with that. The notifications sentence still exists behind a
+`reason` prop, used in exactly one place: your own Settings screen, where it is
+the explanation for a toggle that cannot be switched on.
+
+It is also no longer gated on notifications being enabled (which for a shared
+instance is never), just on being an iPhone or iPad in a browser tab. It waits
+until Meridian's own walkthrough has run once, so a stranger's first thirty
+seconds are not two interruptions competing.
+
+## 12.6 Voice transcription, now that the audio is elsewhere
+
+`transcribe-voice` grew a second route.
+
+* **Your account** — unchanged. `{"voice_id": "…"}`, the function downloads the
+  audio from your project under your own JWT, transcribes it, writes the row.
+  Durable: the answer lands even if you closed the app.
+* **Everyone else** — the browser downloads the audio from *their* project and
+  posts the bytes to the function as `multipart/form-data`. The function verifies
+  the caller's JWT with `getUser()`, calls Groq, and returns the text; it reads
+  and writes no table. The client writes the transcript back to its own database.
+
+Because nothing server-side is left holding that row, `useVoice` now flips any
+`pending` entry older than ten minutes to `failed`, so a recording whose tab was
+closed mid-transcription offers a retry instead of spinning forever.
+
+**Redeploy the function:** `supabase functions deploy transcribe-voice`
+
+## 12.7 Rotating the cron secret — do this before you share the link
+
+An earlier revision of `supabase/notifications_cron.sql` had the real
+`CRON_SECRET` written into it, and that file is committed. The value is in this
+repository's git history permanently, and rewriting history will not reliably
+remove it from existing clones or forks. **Rotating it is what makes the leaked
+copy worthless.**
+
+`push-dispatch` is deployed with `--no-verify-jwt` so pg_cron can reach it, which
+means that header is the only thing between its URL and anyone who wants to make
+it send notifications to every user of the app.
+
+1. Pick a new random string:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+   ```
+
+2. Set it on the project:
+
+   ```bash
+   supabase secrets set CRON_SECRET=the_new_value
+   ```
+
+3. Open `supabase/notifications_cron.sql`, put the new value and your project ref
+   in place of the two placeholders, run the file in the SQL editor, then **undo
+   your edit before committing**.
+
+4. Confirm the old one is dead — this should answer `403 Forbidden`:
+
+   ```bash
+   curl -s -X POST https://<PROJECT_REF>.supabase.co/functions/v1/push-dispatch \
+     -H "x-cron-secret: SomethingThatMakesItWorkIsEnough"
+   ```
+
+5. Confirm the new one lives — within a minute or two:
+
+   ```sql
+   select status, return_message, start_time
+   from cron.job_run_details order by start_time desc limit 5;
+   ```
+
+## 12.8 Vercel Web Analytics
+
+`@vercel/analytics` is installed and `<Analytics />` is mounted in `src/App.tsx`.
+It is inert anywhere but the Vercel deployment, so local development is
+unaffected.
+
+One thing left for you, in the browser: **Vercel → your project → Analytics →
+Enable**. Nothing is recorded until you do, and the script quietly 404s until
+then. Redeploy afterwards.
+
+## 12.9 What a new account starts with — and what it doesn't
+
+**The rule: `user_setup.sql` creates tables, indexes, policies, buckets,
+functions and triggers. No content.** Kindle is the single exception, and it is
+argued below.
+
+The script was originally generated from your own schema, which meant it carried
+your life with it. That has been stripped out.
+
+### Removed: Aurum's seeded categories
+
+The `handle_new_user` trigger used to write eleven categories into every new
+account: Allowance, Gifts, Business → Recurring Retainer / One-time Project,
+College Essentials, Canteen, Eating Out, Transport, Subscriptions, Misc.
+
+That list is not neutral scaffolding — it is a portrait. It assumes a student
+living on an allowance, eating at a college canteen, freelancing on retainers.
+Handed to a stranger as "your categories", it gets the app wrong about them on
+the first screen they see.
+
+`user_setup.sql` now **drops** that trigger and function rather than creating
+them, which also cleans up any project made with the older script. It drops the
+trigger only — never the rows it already wrote.
+
+Aurum's dashboard has a designed first-run state in its place: the three-step
+shape of the module and a button into Settings to make the first category. The
+Add Transaction sheet has a matching state, because that sheet is reachable from
+the bottom nav even before any category exists.
+
+### Removed: Kindle's other five habits
+
+`DEFAULT_HABITS` used to seed eight: water at four litres, two baths a day,
+protein at 100g from natural sources, a skincare routine, avoiding processed
+foods, plus gym, sleep and study. The first five are somebody's actual routine.
+
+### Kept: three Kindle habits, deliberately
+
+| Habit | Type |
+| --- | --- |
+| Gym | binary |
+| Sleep (8 hours) | multi-stage, 1–8 |
+| Study (5 hours) | multi-stage, 1–5 |
+
+An 8×7 grid with nothing in it does not read as "add a habit", it reads as
+broken — a grid is a shape made of its contents. And the spread is the real
+reason for the three: one all-or-nothing habit and two counting up on *different*
+ranges demonstrate the whole habit model in one glance. A walkthrough would need
+three paragraphs to say what three rows of the grid say by themselves.
+
+Kindle's walkthrough now has a step, anchored to the Settings tab, saying in as
+many words that these are examples and can be renamed, retargeted or deleted.
+
+Seeding is still client-side (`src/kindle/lib/seed.ts`) and still only runs
+against a habits table with zero rows in it, so **your own eight habits are
+untouched**.
+
+### Checked and clean
+
+No other module seeds anything. Virtus starts with an empty exercise library,
+Loom with no term or classes, Vigil with an empty topic tree, Chronicle with
+nothing in any of its three sections. The only `INSERT`s left in the whole script
+are the two storage buckets. The only literal column default that is not
+machinery is `categories.color`, which is Meridian's brand gold used as the
+fallback for a category created without one — a colour, not a preference.
+
+### Known, and left alone
+
+The app formats dates and currency as `en-IN` (₹, Indian date order) throughout.
+That is baked into the product rather than seeded per account, so it was out of
+scope for this pass — but it is worth knowing that a user in another country sees
+rupees. `meridian_notification_settings.timezone` also still defaults to
+`Asia/Kolkata` in the auth project's schema; the client overwrites it with the
+device's own zone on every save, and shared instances get no notifications at
+all, so nothing reads a stale value.
+
+### If you change the schema later
+
+Change `supabase/user_setup.sql` and nothing else. The setup walkthrough imports
+that file with `?raw`, so the script users are shown is always the current one.
+And keep the rule: structure, not content.
+
+## 12.10 Empty states and the two deep walkthroughs
+
+With the seed data gone, four of the six modules now open completely empty for a
+new account. Empty is the first impression, so every zero-state is a designed
+screen ending in a button, built from one shared component
+(`src/components/ModuleEmptyState.tsx`) with a palette per module — five
+hand-rolled versions would have drifted within a week.
+
+**Virtus and Loom get long walkthroughs**, breaking the "keep it short" rule the
+other five follow, because both have a setup *chain* rather than a feature:
+
+* **Virtus (9 steps)** — nothing can be logged until an exercise library, split
+  days built from it, and a weekly schedule exist, in that order. Miss that and
+  the app appears to do nothing at all. The tour also covers the three things
+  nobody finds alone: last session's numbers pre-filled as the overload target,
+  rest days being a thing you log rather than the absence of one, and the volume
+  grid ranking each day against the rolling average of *that same split day*.
+* **Loom (8 steps)** — a term and its period times come before anything else can
+  exist, class presets are saved once and referenced everywhere, and semester
+  versioning with effective dates is the classic feature nobody discovers until
+  the week they need it.
+
+One real bug fixed along the way: Loom's walkthrough was mounted *past* the "no
+term yet" early return, so a brand-new account — exactly who needs to be told how
+terms and versioning work — could never reach it. It is now mounted in both
+branches.
+
+Steps with no `anchor` centre themselves instead of pointing at a control, which
+is what makes these tours work on an account where most of the UI does not exist
+yet.
+
+## 12.11 Paused projects, and the Troubleshooting page
+
+Supabase suspends a free project after about a week without traffic. That is not
+an edge case — it describes everyone who tries Meridian and does not open it
+daily — so it is the one connection failure the app diagnoses rather than
+shrugging at.
+
+`src/lib/projectHealth.ts` probes the REST root and classifies the answer:
+
+| Result | Meaning | What the screen says |
+| --- | --- | --- |
+| `offline` | `navigator.onLine` is false | "You're offline" |
+| `paused` | Gateway answered 540/503, or the body said "paused" | "Your Supabase project **is** paused" |
+| `unreachable` | No readable answer at all | "isn't answering… almost always this means paused" |
+| `reachable` | It answered; the problem is something else | Schema-missing or sign-in help instead |
+
+**Detection is not always certain, and the copy is honest about which case it is
+in.** A gateway error page is not obliged to carry CORS headers, and without them
+the browser refuses to let the page read the response — so a genuinely paused
+project can land in `unreachable` alongside a deleted one or a dead network.
+Hence two headlines rather than one confident guess.
+
+Both paused variants give the same guided restore: a link straight to that
+project's dashboard, the exact click path to **Restore project**, a note that it
+takes a minute or two, and a Try again that re-runs the whole connection.
+
+**Settings → Troubleshooting** (`/settings/help`) covers eight problems in plain
+language, each with the click path: paused projects, wrong or mismatched
+credentials, a setup script that did not finish (noting that Supabase runs it as
+one transaction, so there is no half-created state to untangle), "Confirm email"
+still on, notifications being unavailable, iOS install, data appearing to vanish
+after a connection change, and re-entering credentials on a new device.
+
+## 12.12 Before the link goes out
+
+Everything above is done in the repo. This is what is left for you, in order.
+Nothing here is optional.
+
+**1. Deploy the rewritten dispatcher.** It was deliberately not deployed last
+time, because this build rewrote its `external_data` handling. Until it is, the
+old degraded reminders are still what the server sends.
+
+```bash
+supabase functions deploy push-dispatch --no-verify-jwt
+```
+
+The `--no-verify-jwt` matters: pg_cron has no user session to present, and
+without the flag every scheduled tick is rejected. `CRON_SECRET` is what guards
+it instead (12.7).
+
+**2. Confirm the dispatcher is filtering.** Within a couple of minutes of the
+deploy:
+
+```sql
+select id, status_code, content from net._http_response order by id desc limit 5;
+```
+
+A healthy tick answers `200` with `{"checked":N,"sent":0,...}` on most minutes.
+`checked` should count only accounts with `external_data = false`.
+
+**3. Push the app.** Commit and push; Vercel redeploys on its own. Confirm the
+build succeeded in the Vercel dashboard before going any further.
+
+**4. Check your own account still works, on the live URL.** You are the owner
+path and nothing in this build should have touched you:
+
+- launcher loads immediately, no setup screen
+- Settings still shows the full notifications section with all five toggles
+- **Send a test notification** — it should arrive
+- all six modules show your existing data, and Kindle still has your eight habits
+  (the seed only ever runs against an empty table)
+
+**5. Walk the whole setup flow with a throwaway account.** This is the highest-value
+thing you can do and it should be the last thing before you share the link. Use a
+real second email and a brand-new free Supabase project:
+
+- [ ] sign up → the setup walkthrough appears, six steps
+- [ ] the SQL script copies with one tap and runs clean — `Success. No rows
+      returned`
+- [ ] Test Connection passes
+- [ ] **Aurum opens empty** with the "start with a category" screen; making one
+      category then lets you log a transaction
+- [ ] **Kindle has exactly three habits** — Gym, Sleep, Study — and the
+      walkthrough says they are examples
+- [ ] **Virtus opens on the three-step setup screen**, and its button lands on
+      Settings → Library
+- [ ] **Loom opens on "start with the semester"**, and its walkthrough runs
+      there (this was previously unreachable before a term existed)
+- [ ] **Vigil → Topics** shows the empty-tree state, and its button opens the
+      add-category field
+- [ ] Settings → Notifications shows **"Not available for shared instances yet"**
+      and no toggles, and never asks for browser permission
+- [ ] Settings → Troubleshooting opens and its entries expand
+- [ ] on iPhone: the install banner talks about full screen, **not** about
+      notifications
+
+**6. Check the paused-project screen, if you can.** Optional and slow, but it is
+the state most users will eventually hit. Either wait for the throwaway project
+to pause on its own, or pause it by hand from its dashboard (Project Settings →
+General → Pause project), then open Meridian: you should get the guided restore
+rather than a generic error.
+
+**7. Then share the link.**

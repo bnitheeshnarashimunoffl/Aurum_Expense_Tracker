@@ -31,10 +31,19 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      // Both icons are the app's own mark, so a Meridian notification is
+      // The large icon, drawn in full colour, so a Meridian notification is
       // recognisable in a stack of others before a word of it is read.
       icon: '/icons/pwa-192.png',
-      badge: '/icons/pwa-192.png',
+      // The badge is a DIFFERENT image on purpose, and this is Android-only
+      // behaviour worth spelling out: the status-bar badge is not drawn in
+      // colour. Android takes its alpha channel and stamps it in one system
+      // tint. pwa-192.png is deliberately opaque — iOS home-screen icons may not
+      // be transparent — so using it here painted a solid filled blob in the
+      // status bar with no mark visible at all. badge-96.png is the same
+      // sun-over-a-horizon motif drawn as white on nothing, which is what that
+      // masking step actually wants. iOS ignores `badge` entirely, so nothing
+      // there changes either way.
+      badge: '/icons/badge-96.png',
       // Tagging by module means a second water reminder REPLACES the first rather
       // than stacking a column of identical nudges someone has to swipe through.
       tag: payload.tag,
@@ -46,9 +55,22 @@ self.addEventListener('push', (event) => {
   )
 })
 
+/**
+ * Confines a notification's destination to this app.
+ *
+ * The payload is written by Meridian's own dispatcher and only ever contains
+ * literals like "/kindle", so this is defence in depth — but the worker will
+ * happily openWindow() anything it is handed, and "//somewhere.else" is a
+ * protocol-relative URL that a bare startsWith('/') check waves through. One
+ * function is cheaper than trusting that the payload can never change.
+ */
+function safePath(value) {
+  return typeof value === 'string' && /^\/(?![/\\])/.test(value) ? value : '/'
+}
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-  const target = (event.notification.data && event.notification.data.url) || '/'
+  const target = safePath(event.notification.data && event.notification.data.url)
 
   event.waitUntil(
     (async () => {

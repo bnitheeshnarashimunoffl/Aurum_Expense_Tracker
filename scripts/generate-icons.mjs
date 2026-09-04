@@ -5,6 +5,7 @@ import path from 'node:path'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SOURCE = path.join(__dirname, '..', 'public', 'icon-source.svg')
+const BADGE_SOURCE = path.join(__dirname, '..', 'public', 'badge-source.svg')
 const OUT_DIR = path.join(__dirname, '..', 'public', 'icons')
 
 const svg = readFileSync(SOURCE)
@@ -27,3 +28,14 @@ for (const { name, size } of targets) {
     .toFile(path.join(OUT_DIR, name))
   console.log(`Wrote ${name} (${size}x${size})`)
 }
+
+// The Android notification badge, and the one icon here that must KEEP its alpha
+// channel. Android ignores the badge's colours entirely and stamps its alpha in
+// a single system tint, so an opaque image — which every icon above deliberately
+// is, because iOS home-screen icons may not be transparent — comes out as a solid
+// filled blob in the status bar. Hence a separate source and no .flatten().
+await sharp(readFileSync(BADGE_SOURCE), { density: 384 })
+  .resize(96, 96)
+  .png()
+  .toFile(path.join(OUT_DIR, 'badge-96.png'))
+console.log('Wrote badge-96.png (96x96, transparent — Android notification badge)')

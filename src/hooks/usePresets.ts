@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { subscribe, notify } from '@/lib/sync'
 import type { QuickAddPreset, TxType } from '@/lib/types'
 

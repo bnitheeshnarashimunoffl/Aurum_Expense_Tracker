@@ -21,6 +21,32 @@
 // us are dead). It never reads chronicle_notes — Secret Notes are not consulted
 // by this system anywhere.
 //
+// EXTERNAL DATA — who this function will not send to, and why.
+//
+// Everyone except the owner keeps their module data in a Supabase project of
+// their own. This server holds no credentials for those projects and never will:
+// the credentials live on the user's device and are deliberately never sent
+// anywhere the developer controls, which is the promise the whole setup flow is
+// built on. Reading someone's habits or to-dos from here is therefore not
+// something that was lost — it is something that must not happen.
+//
+// An earlier revision tried to send those accounts a DEGRADED set: the water
+// reminder without the day's total, the study check-in without the hours, the
+// gym question without knowing whether the gym had already happened. That was
+// wrong. Every one of those notifications exists to say something specific about
+// your day; stripped of the specifics they are the generic "Reminder!" this
+// system was built to avoid, and two of the five could not be sent at all. Three
+// visibly stupider reminders plus two silent absences reads as a broken app, not
+// a considerate one.
+//
+// So: accounts marked external_data are excluded from dispatch entirely. The
+// query below filters them out before anything else happens, which also means
+// this function never spends a row read on them. The settings screen tells them
+// plainly that reminders are not available for shared instances yet, which is
+// honest and finishes the sentence.
+//
+// The owner is unaffected. Every reminder below still carries its real numbers.
+//
 // Deploy:  supabase functions deploy push-dispatch --no-verify-jwt
 // Secrets: supabase secrets set VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... VAPID_SUBJECT=mailto:you@example.com CRON_SECRET=...
 //
@@ -128,6 +154,11 @@ Deno.serve(async (req: Request) => {
     .from('meridian_notification_settings')
     .select('*')
     .eq('enabled', true)
+    // The whole of the public-release change to this function. Accounts whose
+    // module data lives in a Supabase project this server cannot read are
+    // excluded here, at the source, rather than being sent something vaguer.
+    // See the header comment for why degraded reminders were rejected.
+    .eq('external_data', false)
   if (settingsError) return json({ error: `Could not read settings: ${settingsError.message}` }, 500)
   if (!settingsRows || settingsRows.length === 0) return json({ ...report, note: 'No users have notifications enabled.' })
 

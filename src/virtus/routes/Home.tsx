@@ -23,6 +23,7 @@ import MonthGrid from '../components/MonthGrid'
 import DayDetailSheet from '../components/DayDetailSheet'
 import SplitDayPicker from '../components/SplitDayPicker'
 import LaurelIcon from '../components/LaurelIcon'
+import ModuleEmptyState from '@/components/ModuleEmptyState'
 import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 
 interface Action {
@@ -81,6 +82,59 @@ export default function Home() {
     return (
       <div className="px-4 pt-4">
         <LoadingRing label="Loading Virtus" />
+      </div>
+    )
+  }
+
+  /**
+   * A brand-new Virtus can do nothing at all, and the reason is not obvious from
+   * looking at it: logging a set needs an exercise library, split days built from
+   * that library, and a weekly schedule pointing at those — in that order. So the
+   * first screen is the chain itself with a button into the place it happens,
+   * rather than an empty grid and a shrug. This replaces the whole screen instead
+   * of sitting inside it: a history grid of seven empty cells above a "set this
+   * up" card would be showing someone the result before the cause.
+   */
+  const nothingSetUp = plan.exercises.length === 0 && plan.splitDays.length === 0
+
+  if (nothingSetUp) {
+    return (
+      <div className="px-4 pt-4">
+        <header className="mb-5 flex items-center gap-2.5 pr-14">
+          <LaurelIcon size={28} />
+          <div className="min-w-0 flex-1">
+            <h1 className="font-inscribe text-2xl font-semibold text-inkCharcoal">Virtus</h1>
+            <p className="truncate text-xs text-inkSoft">Nothing set up yet</p>
+          </div>
+        </header>
+
+        <ModuleEmptyState
+          tone="virtus"
+          icon={<LaurelIcon size={30} />}
+          title="Three things, then you can train"
+          body="Virtus needs to know what you lift before it can record you lifting it. All three live in Settings, and each is built from the one before."
+          steps={[
+            <>
+              <span className="text-inkCharcoal">Library</span> — every exercise you do, grouped into muscle groups
+              you name.
+            </>,
+            <>
+              <span className="text-inkCharcoal">Split days</span> — Push, Pull, Legs or whatever yours are, built by
+              picking from that library.
+            </>,
+            <>
+              <span className="text-inkCharcoal">Schedule</span> — which split day falls on which weekday, and which
+              days are rest.
+            </>,
+          ]}
+          action={{ label: 'Start with the library', to: '/virtus/settings' }}
+        />
+
+        <p className="mt-4 text-center text-[11.5px] leading-relaxed text-inkSoft">
+          Ten minutes once. After that Virtus opens already knowing what today is.
+        </p>
+
+        <ModuleWalkthrough module="virtus" />
       </div>
     )
   }
@@ -183,11 +237,23 @@ export default function Home() {
           )}
         </div>
 
+        {/* The library exists but no split days do — halfway through the chain.
+            Names the next link rather than repeating the whole thing. */}
         {plan.splitDays.length === 0 ? (
-          <p className="virtus-neu-pressed rounded-card px-4 py-4 text-sm text-inkSoft">
-            No split days yet. Build your exercise library and split days in Settings, then Virtus can suggest what
-            to train each day.
-          </p>
+          <div className="virtus-neu-pressed rounded-card px-4 py-4">
+            <p className="text-[13px] leading-relaxed text-inkSoft">
+              Your library is started. Next, group those exercises into split days — Push, Pull, Legs, whatever yours
+              are — and Virtus can suggest what to train each day.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/virtus/settings')}
+              className="mt-3 min-h-[44px] w-full rounded-card text-[13.5px] font-semibold transition-transform active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-bronzeDeep"
+              style={{ background: 'var(--bronze-primary)', color: 'var(--marble-base)' }}
+            >
+              Build a split day
+            </button>
+          </div>
         ) : (
           <>
             <button

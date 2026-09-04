@@ -6,6 +6,16 @@ interface InlineAddProps {
   onAdd: (label: string) => Promise<void>
   /** Compact sits inside a subject's subtopic list; default sits at category level. */
   size?: 'md' | 'sm'
+  /**
+   * Bump this to spring the field open from outside.
+   *
+   * A counter rather than a boolean, so pressing the same button twice works: a
+   * boolean that is already true fires no effect, and the second press would do
+   * nothing. Used by the empty state on Topics, whose whole job is to put the
+   * user in this field — the alternative was auto-focusing on mount, which throws
+   * a keyboard over the screen every time anyone opens the tab.
+   */
+  openToken?: number
 }
 
 /**
@@ -14,7 +24,7 @@ interface InlineAddProps {
  * six trips through a modal. Deliberately ungated — unlike Kindle, structural edits
  * here carry no PIN.
  */
-export default function InlineAdd({ placeholder, onAdd, size = 'md' }: InlineAddProps) {
+export default function InlineAdd({ placeholder, onAdd, size = 'md', openToken = 0 }: InlineAddProps) {
   const reduceMotion = useReducedMotion()
   const [open, setOpen] = useState(false)
   const [value, setValue] = useState('')
@@ -24,6 +34,10 @@ export default function InlineAdd({ placeholder, onAdd, size = 'md' }: InlineAdd
   useEffect(() => {
     if (open) inputRef.current?.focus()
   }, [open])
+
+  useEffect(() => {
+    if (openToken > 0) setOpen(true)
+  }, [openToken])
 
   async function submit() {
     const label = value.trim()

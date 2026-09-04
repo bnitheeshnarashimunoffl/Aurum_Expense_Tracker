@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { db, getMeta, setMeta, loomUserId, setLoomUserId } from './db'
 import type { ClassPreset, ScheduleBlock, Term, TimeSlot } from './types'
 

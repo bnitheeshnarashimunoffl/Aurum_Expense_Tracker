@@ -6,7 +6,23 @@ import type { ModuleKey, WalkthroughDefinition } from './types'
  * The editorial rule for all of them: a step has to teach something a person
  * would not otherwise find. "This is the grid" is a caption. "Past days are
  * behind a PIN and ask for a reason" is a reason to trust the grid. Anything that
- * failed that test was cut, which is why none of these runs past five steps.
+ * failed that test was cut.
+ *
+ * VIRTUS AND LOOM ARE DELIBERATE EXCEPTIONS to the "keep it short" rule the other
+ * five obey, and the reason is that both have a setup chain rather than a feature.
+ *
+ * Virtus cannot log a single set until three things exist in order — an exercise
+ * library, split days built from it, and a weekly schedule pointing at those. Miss
+ * that and the app appears to do nothing at all, which is not a tour's failure to
+ * be brief, it is a tour's failure to work. Loom has the same shape (a term and
+ * its time slots come before anything else can exist) plus semester versioning,
+ * which is the classic feature nobody discovers until the week they need it and
+ * cannot find it.
+ *
+ * Both therefore run long, and both open with the shape of the thing before any
+ * individual screen. Steps with no `anchor` are the ones doing that work: they
+ * centre themselves and explain, rather than pointing at a control that will not
+ * exist yet on a brand-new account.
  *
  * Chronicle's Secret Notes are not mentioned anywhere here, deliberately. Its
  * entire value is that it is not advertised.
@@ -36,9 +52,14 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
         body: 'Inside any app, the small sun at the top right sets behind the horizon and returns you here. It replaces the back button entirely.',
       },
       {
+        // Deliberately NOT about notifications any more. This used to promise
+        // water reminders and class nudges, which are unavailable to shared
+        // instances — and a walkthrough that opens by offering something the
+        // account will never get is the worst possible first impression. Settings
+        // is described by what is actually in it for everybody.
         anchor: 'meridian-settings',
-        title: 'Meridian can nudge you',
-        body: 'Water through the day, a class half an hour before it starts, the gym at six if nothing’s logged. Turn each one on or off in here.',
+        title: 'Settings, and where your data lives',
+        body: 'Replay any of these introductions, see which Supabase project Meridian is reading from, and find help if something ever stops loading.',
         radius: 999,
       },
     ],
@@ -48,6 +69,15 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     key: 'aurum',
     label: 'Aurum — finance',
     steps: [
+      {
+        // First, because on a new account it is the only thing that can be done:
+        // nothing can be logged until a category exists. The walkthrough runs on
+        // the empty first-run screen as well as the real dashboard, so the step
+        // that unblocks the module has to come before the ones describing it.
+        anchor: 'aurum-settings',
+        title: 'Your categories, not a stock list',
+        body: 'Aurum starts with none on purpose — a list of somebody else’s spending habits is worse than none at all. Make the handful you actually use in Settings; the first one takes about ten seconds.',
+      },
       {
         anchor: 'aurum-dial',
         title: 'Two balances, one dial',
@@ -73,13 +103,18 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     steps: [
       {
         anchor: 'kindle-grid',
-        title: 'Your week, eight habits across',
+        title: 'Your week, one row per habit',
         body: 'One cell per habit per day. Colour runs from red to green as you get closer to that day’s target, so a bad week is obvious without reading a number.',
       },
       {
         anchor: 'kindle-pills',
         title: 'Tap a pill to log today',
-        body: 'Habits like water step through stages — 1L, 2L, 3L — instead of being all-or-nothing, so a partial day still counts for something. Hold a pill to reset it to zero.',
+        body: 'Some habits are done-or-not. Others step through stages — an hour at a time, say — so a partial day still counts for something instead of being nothing. Hold a pill to reset it to zero.',
+      },
+      {
+        anchor: 'kindle-settings',
+        title: 'Those three are only examples',
+        body: 'Gym, Sleep and Study are here so the grid has something in it — one all-or-nothing habit and two that count up, to show both kinds. Rename them, change their targets, delete them, add your own: all of it is in Settings.',
       },
       {
         anchor: 'kindle-history',
@@ -116,9 +151,22 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     label: 'Loom — timetable',
     steps: [
       {
+        title: 'A timetable, built in three passes',
+        body: 'A term to hold it, a library of your classes, then the week itself. It sounds like a lot; it is about ten minutes once, and then the timetable is just there every morning.',
+      },
+      {
+        anchor: 'loom-terms',
+        title: 'Start with the term',
+        body: 'A term is the semester itself — a name and the dates it runs between. Its period times live here too, and they are yours to define: Loom never assumes your day is built out of one-hour blocks.',
+      },
+      {
+        title: 'Classes are saved once, used everywhere',
+        body: 'A class carries its name, room, faculty and colour, and every slot holding it points at that one copy. Change the room in March and every Tuesday morning for the rest of term changes with it.',
+      },
+      {
         anchor: 'loom-grid',
-        title: 'Tap an empty slot to fill it',
-        body: 'A class is saved once — name, room, faculty, colour — and reused everywhere it appears. Edit that one class and every slot holding it updates.',
+        title: 'Then fill the week in',
+        body: 'Tap any empty slot and pick a class from the library. Tap a filled one to swap or clear it. Nothing here is typed twice.',
       },
       {
         anchor: 'loom-view',
@@ -127,9 +175,17 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
         radius: 999,
       },
       {
+        title: 'When the timetable changes mid-term',
+        body: 'It always does. Rather than overwriting the week and losing what it used to be, add a new version and give it the date it takes effect from. Loom shows whichever version is in force today, and the old one stays exactly as it was.',
+      },
+      {
         anchor: 'loom-terms',
-        title: 'One timetable per stretch of term',
-        body: 'When the schedule changes mid-semester, add a new version with the date it takes effect. Loom shows whichever one is in force today and keeps the rest.',
+        title: 'Both of those live under Terms',
+        body: 'New versions, new semesters, and the period times. Next semester can start as a copy of this one, so the class library and the timings carry over and only the week itself is empty.',
+      },
+      {
+        title: 'It works with no signal',
+        body: 'Loom keeps its own copy on this device, so it opens in a basement or on a train exactly as fast as anywhere else. Changes sync back up on their own once you have a connection again.',
       },
     ],
   },
@@ -139,19 +195,43 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     label: 'Virtus — gym',
     steps: [
       {
-        anchor: 'virtus-today',
-        title: 'Today’s session, one tap in',
-        body: 'Virtus opens on whatever your split says you are training. Sets go in as you do them — weight, reps, add — so there is nothing to plan beforehand.',
-      },
-      {
-        anchor: 'virtus-grid',
-        title: 'Darker means heavier',
-        body: 'Every day is coloured by total volume — weight × reps across the whole session. Easy days stay pale, hard days go dark, and rest days sit off the scale entirely.',
+        title: 'Three things, in this order',
+        body: 'Virtus cannot log a set until it knows what you lift, how those lifts group into workout days, and which day is which. That is the whole setup, it happens once, and until it is done the app will look like it does nothing.',
       },
       {
         anchor: 'virtus-settings',
-        title: 'Build the library once',
-        body: 'Exercises, muscle groups and split days live in Settings. Each exercise carries last session’s numbers into the next one, so you always know what to beat.',
+        title: 'All of it is in Settings',
+        body: 'Three tabs in there, in the order you need them: Library, Split days, Schedule. Work left to right and each one is built from the one before it.',
+      },
+      {
+        title: 'One — the library',
+        body: 'Every exercise you do, sorted into muscle groups you name yourself. This is the only place a lift is ever written down; everything after this points back at it. Removing one later keeps all the sets you already logged under it.',
+      },
+      {
+        title: 'Two — split days',
+        body: 'A split day is a named workout — Push, Pull, Legs, whatever you call yours — built by picking exercises out of the library. Rename a lift afterwards and every split day holding it updates, because they hold the exercise itself and not a copy of its name.',
+      },
+      {
+        title: 'Three — the week',
+        body: 'Point each weekday at a split day, or mark it as rest. That is what lets Virtus open already knowing what today is, instead of asking.',
+      },
+      {
+        anchor: 'virtus-today',
+        title: 'After that, it is one tap',
+        body: 'Virtus opens on whatever the schedule says you are training. Sets go in as you do them — weight, reps, add. You can train something else instead on any given day without touching the schedule.',
+      },
+      {
+        title: 'Rest is a thing you log',
+        body: 'Mark a rest day and it is recorded as one. That matters more than it sounds: it keeps "I rested" and "I forgot" from looking identical a month later, which is the difference between a record and a guess.',
+      },
+      {
+        title: 'Last session stays on screen',
+        body: 'While you are logging a lift, what you did with it last time sits right above the inputs — and the boxes come pre-filled with those numbers. Beating it is a matter of changing one digit rather than remembering anything.',
+      },
+      {
+        anchor: 'virtus-grid',
+        title: 'Darker means a harder day than usual',
+        body: 'Each day is ranked on total volume — weight × reps across the session — against the average of your last six of that same split day. So a leg day is only ever compared with your other leg days, never with a shoulder day. Rest sits off the scale entirely.',
       },
     ],
   },

@@ -23,6 +23,21 @@ function readLocal(module: ModuleKey): boolean {
   }
 }
 
+/**
+ * Whether this device has already been through a walkthrough, answered
+ * synchronously from the local mirror.
+ *
+ * Exists for callers that need to know *right now*, during a render, whether the
+ * screen is already busy showing a tour — the launcher's install banner is the
+ * one that matters, since a banner sliding up underneath a spotlight overlay is
+ * two first-run interruptions at once. A Supabase round trip would be too late to
+ * be useful, and the mirror is written by both finish and skip, so it is exactly
+ * the right question for this.
+ */
+export function walkthroughSeenLocally(module: ModuleKey): boolean {
+  return readLocal(module)
+}
+
 function writeLocal(module: ModuleKey, status: WalkthroughStatus) {
   try {
     localStorage.setItem(localKey(module), status)

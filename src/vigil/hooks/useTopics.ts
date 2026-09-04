@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { subscribe, notify } from '@/lib/sync'
 import { buildTree, type CategoryNode } from '../lib/tree'
 import type { VigilCategory, VigilSubject, VigilSubtopic } from '../lib/types'

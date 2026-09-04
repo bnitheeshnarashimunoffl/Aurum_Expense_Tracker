@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase'
+import { db as supabase } from '@/lib/dataClient'
 import { notify } from '@/lib/sync'
 import { DEFAULT_HABITS } from './types'
 

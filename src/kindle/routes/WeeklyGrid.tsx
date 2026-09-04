@@ -12,6 +12,7 @@ import LogHabitSheet from '../components/LogHabitSheet'
 import KindleToast from '../components/KindleToast'
 import FlameIcon from '../components/FlameIcon'
 import LoadingRing from '@/components/LoadingRing'
+import ModuleEmptyState from '@/components/ModuleEmptyState'
 import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
 import type { Habit } from '../lib/types'
 
@@ -72,7 +73,16 @@ export default function WeeklyGrid() {
       {loading ? (
         <LoadingRing label="Loading habits" />
       ) : habits.length === 0 ? (
-        <p className="text-sm text-muted">No active habits — add one in Settings.</p>
+        // Only reachable by deleting all three examples: Kindle is the one module
+        // that ships with anything in it, precisely because an empty grid reads as
+        // broken rather than as new.
+        <ModuleEmptyState
+          tone="kindle"
+          icon={<FlameIcon size={30} />}
+          title="No habits to track yet"
+          body="Kindle needs at least one habit before the grid means anything. Add the ones you actually want to keep — a plain done-or-not, or one that counts up through the day."
+          action={{ label: 'Add a habit', to: '/kindle/settings' }}
+        />
       ) : (
         <>
           {/* Read-only summary. Nothing here logs anything: today goes through the pills

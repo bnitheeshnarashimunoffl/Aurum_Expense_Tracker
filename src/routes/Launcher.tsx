@@ -7,7 +7,7 @@ import KindleCard from '@/components/dashboard/KindleCard'
 import VigilCard from '@/components/dashboard/VigilCard'
 import LoomCard from '@/components/dashboard/LoomCard'
 import ModuleWalkthrough from '@/onboarding/ModuleWalkthrough'
-import { useNotificationSettings } from '@/hooks/useNotificationSettings'
+import { walkthroughSeenLocally } from '@/onboarding/useWalkthrough'
 import FlameIcon from '@/kindle/components/FlameIcon'
 import HourglassIcon from '@/vigil/components/HourglassIcon'
 import LoomIcon from '@/loom/components/LoomIcon'
@@ -86,13 +86,23 @@ function GearIcon() {
  * being scannable.
  */
 export default function Launcher() {
-  const { settings } = useNotificationSettings()
   const installGate = useIosInstallGate()
 
-  // The banner is only an interruption when it is explaining something the user
-  // has actually asked for: notifications are on for this account, but this
-  // device is an iOS browser tab, where they will silently never arrive.
-  const showInstallBanner = installGate.visible && settings.enabled
+  /**
+   * When the install suggestion is allowed to appear.
+   *
+   * It used to be gated on notifications being switched on, because that was the
+   * only reason to install. It is not any more — notifications are unavailable to
+   * shared instances, and installing is worth it on its own (full screen, real
+   * icon, a tab iOS cannot evict). So the condition is now simply: iPhone or iPad,
+   * in a browser tab, not previously dismissed.
+   *
+   * The one thing held back for is the introduction. A banner sliding up from the
+   * bottom while the walkthrough's spotlight is on screen is two interruptions
+   * competing on someone's first thirty seconds, so it waits until Meridian's own
+   * tour has been through once.
+   */
+  const showInstallBanner = installGate.visible && walkthroughSeenLocally('meridian')
 
   return (
     <div className="relative mx-auto min-h-full max-w-lg px-5 pb-16 pt-safe-top">
