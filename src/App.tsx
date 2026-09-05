@@ -42,6 +42,10 @@ const MeridianSettings = lazy(() => import('@/routes/MeridianSettings'))
 const SetupFlow = lazy(() => import('@/setup/SetupFlow'))
 const ConnectionSettings = lazy(() => import('@/routes/ConnectionSettings'))
 const Troubleshooting = lazy(() => import('@/routes/Troubleshooting'))
+// The privacy policy. Split out because almost no session opens it, and mounted
+// OUTSIDE the auth gate below — Google's consent screen has to be able to read it
+// with no account, and so should anyone deciding whether to make one.
+const Privacy = lazy(() => import('@/routes/Privacy'))
 const KindleHistory = lazy(() => import('@/kindle/routes/History'))
 const KindleSettings = lazy(() => import('@/kindle/routes/Settings'))
 const VigilTopics = lazy(() => import('@/vigil/routes/Topics'))
@@ -73,6 +77,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/privacy" element={<Privacy />} />
 
               <Route path="/" element={<RequireAuth />}>
                 {/* These four sit OUTSIDE the data gate on purpose: they are how

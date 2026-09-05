@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom'
+
 const INSTAGRAM_URL = 'https://www.instagram.com/_.nxthx.xsh._/'
 
 interface CreditsProps {
@@ -16,6 +18,13 @@ interface CreditsProps {
    * anything, whereas Settings is already where you go when something is wrong.
    */
   contact?: boolean
+  /**
+   * Adds the privacy policy link. Settings only, for the same reason as the
+   * contact line: /privacy is public and Google's consent screen links straight
+   * to it, so this is for the person already inside the app who wants to find it
+   * without leaving.
+   */
+  privacy?: boolean
 }
 
 /**
@@ -32,7 +41,7 @@ interface CreditsProps {
  * 2.6:1, which is not restraint, it is an accessibility bug wearing restraint's
  * clothes.
  */
-export default function Credits({ mark = true, contact = false }: CreditsProps) {
+export default function Credits({ mark = true, contact = false, privacy = false }: CreditsProps) {
   return (
     // Without the mark this is sitting directly under the launcher's horizon,
     // whose own block already leaves 48px of fading glow below the line; a
@@ -69,6 +78,15 @@ export default function Credits({ mark = true, contact = false }: CreditsProps) 
           </a>
           .
         </p>
+      )}
+
+      {privacy && (
+        <Link
+          to="/privacy"
+          className="-my-1 py-1 text-[11.5px] text-muted underline decoration-muted underline-offset-[3px] transition-colors hover:text-accent focus:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+        >
+          Privacy policy
+        </Link>
       )}
     </footer>
   )

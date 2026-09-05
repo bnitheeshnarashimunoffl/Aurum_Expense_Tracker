@@ -462,7 +462,7 @@ export default function MeridianSettings() {
 
       {/* Below Sign out, which is the last thing on this screen that does
           anything. Credits and the contact line are read, not used. */}
-      <Credits contact />
+      <Credits contact privacy />
 
       <Toast message={message} />
     </div>

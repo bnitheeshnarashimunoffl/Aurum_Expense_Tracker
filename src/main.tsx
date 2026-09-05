@@ -6,6 +6,11 @@ import './index.css'
 // `beforeinstallprompt` while the first paint is still happening, and the event
 // is only useful if it was cancelled and kept. See src/lib/installPrompt.ts.
 import './lib/installPrompt'
+// Lifts a failed Google sign-in out of the URL before anything renders, so the
+// login screen can say what went wrong. See src/lib/oauth.ts.
+import { captureOAuthError } from './lib/oauth'
+
+captureOAuthError()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
