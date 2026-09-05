@@ -10,11 +10,15 @@ assuming you've never used Supabase or Vercel before. Follow it in order.
    (save it somewhere — you likely won't need it again, but keep it), pick the
    region closest to you, and click **Create new project**. Wait ~2 minutes for
    it to provision.
-3. Once it's ready, go to **Project Settings** (gear icon, bottom of the left
-   sidebar) → **Data API**. You'll need two values from this page:
+3. Once it's ready, press **Connect** at the top of the dashboard. It shows both
+   values you need, each with its own copy button. Copy them whole — never
+   retype the URL or build it out of the project ref:
    - **Project URL** — looks like `https://xxxxxxxxxxxx.supabase.co`
-   - **anon public** key (under **Project API keys**) — a long string starting
-     with `eyJ...`
+   - the **publishable** key (**anon** / **public** on older projects) — a long
+     string starting `sb_publishable_...` or `eyJ...`
+
+   Both are also under **Project Settings → API Keys** if you would rather go
+   there directly.
 4. In this project's root folder, copy the example env file and fill in those
    two values:
    ```bash
@@ -266,6 +270,56 @@ a safe.
       note comes back with the match highlighted
 - [ ] Type `secret` into the search field, set a PIN, add a private note, lock
       it, then confirm that note appears in neither the Notes list nor search
+
+---
+
+## 10.6 Vigil's weekly study target
+
+Vigil's daily target used to be five hours for everyone, hard-coded. It is now a
+per-week setting, stored in **`vigil_targets`** — and the interesting part is
+that it cannot be changed once it is set, until the following Monday.
+
+**Run `supabase/vigil_targets_migration.sql` once** in any project created
+before this existed: your own, and any user project set up with an older copy of
+`user_setup.sql`. Nothing breaks without it — a missing table reads as "no week
+has a target", which is the five-hour default Vigil always had — but nobody can
+set a target until it is there.
+
+### The lock is the table, not the screen
+
+```sql
+primary key (user_id, week_start)   -- one row per week, ever
+-- policies: SELECT and INSERT. Deliberately no UPDATE and no DELETE.
+```
+
+That is the whole mechanism. The row is immutable from the moment it lands, the
+primary key refuses the second attempt, and nothing client-side is trusted to
+enforce it — a second device, a stale tab, or the console all hit the same wall.
+
+It also avoids a timezone trap. A policy that tried to allow writes only "during
+the current week" would have to compare the database's clock against the user's,
+and would be wrong for somebody every Monday morning. Immutability needs no clock
+at all: the client computes its own local Monday (the same `mondayOf()` every
+other date in Vigil uses) and inserts once.
+
+### A week with no row is unset, not five hours
+
+The distinction matters twice. It lets someone who installs on a Wednesday choose
+a target that afternoon instead of waiting until Monday. And it means past weeks
+keep whatever they were actually judged against — `targetFor(date)` resolves per
+week — so lowering the target in April cannot retroactively turn March's misses
+into hits.
+
+### What else moved
+
+* Every function in `src/vigil/lib/time.ts` now takes the target as an argument
+  rather than closing over a constant, so no screen can accidentally score one
+  week against another's line.
+* `push-dispatch` reads the week's target before writing Vigil's copy, and the
+  bands in `_shared/copy.ts` became fractions (15% / 70%) instead of fixed clock
+  times — "starting is the whole trick" at 45 minutes into a 90-minute target
+  would be insulting. A five-hour target behaves exactly as it always did.
+  **Redeploy it:** `supabase functions deploy push-dispatch --no-verify-jwt`
 
 ---
 
@@ -606,7 +660,8 @@ Six screens, all of them clicking and pasting in a browser:
 2. create a free Supabase project
 3. copy the script → SQL Editor → New query → paste → Run
 4. Authentication → Sign In / Providers → Email → **Confirm email off** → Save
-5. Project Settings → API Keys → copy the Project URL and the anon/public key
+5. press **Connect** at the top of the dashboard → copy the Project URL and the
+   publishable (anon/public) key, each with its own copy button
 6. paste both, press Test Connection
 
 **No terminal, no clone, no editor, no install, at any point.** If you ever

@@ -149,8 +149,8 @@ reading a single number. Below it, a row of pills logs today in one tap.
 
 > *A vigil is a watch kept over time, deliberately, and held to the end.*
 
-A five-hour daily study target with a countdown that survives the app being
-closed, and a syllabus tree underneath it.
+A daily study target with a countdown that survives the app being closed, and a
+syllabus tree underneath it.
 
 **Core interaction.** Tap once to start, once to pause, as many times as the day
 needs. Time is reconstructed from timestamps rather than held in a JS interval,
@@ -166,6 +166,16 @@ so putting the phone in a pocket mid-session loses nothing.
   subtopics. You only ever tick a leaf; every parent above it is derived. There
   is no percentage to keep in sync, and no way for the tree to disagree with
   itself.
+- **The target is yours, and it locks for the week.** Five hours is the default,
+  not the rule — set anything from thirty minutes to twelve hours in Settings.
+  The catch is deliberate: you choose it *once a week*, and it is then frozen
+  until Monday. A target you can drag down at 9pm on a bad Thursday is not a
+  target, it is a mood, and the week always ends "on target" because the target
+  followed the week. The lock is enforced in Postgres rather than in the UI —
+  `vigil_targets` is keyed on (user, week) and has a select policy and an insert
+  policy and no update policy at all, so the row is immutable the moment it
+  exists. Past weeks keep the target they were actually judged against, so
+  lowering it now can never turn last month's misses into hits.
 - **Its reminders read the clock and the total.** Vigil's notification copy is
   written in three bands — under 45 minutes, under 3½ hours, and the final
   stretch — with the real figures interpolated (*"2h 10m in, 2h 50m to go"*), and
@@ -436,7 +446,7 @@ with VAPID.
 | --- | --- | --- |
 | **Aurum** | never | by design |
 | **Kindle** | hourly, 6am–11pm | silent overnight |
-| **Vigil** | every 2h, 8am–10pm | **nothing at all once the 5 hours are done** |
+| **Vigil** | every 2h, 8am–10pm | **nothing at all once the day's target is met** |
 | **Loom** | 30 min before each class | a class is actually scheduled then |
 | **Virtus** | 6pm | no session logged, and the day is not marked rest |
 | **Chronicle** | 10am, 2pm, 6pm, 10pm | there are incomplete to-dos due today |

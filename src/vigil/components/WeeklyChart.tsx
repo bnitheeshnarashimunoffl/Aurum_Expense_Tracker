@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { formatWeekdayInitial, formatDayNum } from '@/lib/date'
 import { formatDate, todayISO } from '@/lib/format'
-import { DAILY_TARGET_SECONDS } from '../lib/types'
-import { formatDuration, splitAgainstTarget } from '../lib/time'
+import { formatDuration, formatTarget, splitAgainstTarget } from '../lib/time'
 
 export interface WeeklyChartDay {
   date: string
@@ -12,6 +11,12 @@ export interface WeeklyChartDay {
 
 interface WeeklyChartProps {
   days: WeeklyChartDay[]
+  /**
+   * The daily target this week was set to. One value for the whole chart, which
+   * is correct by construction: a target is chosen per week and cannot move
+   * inside one, so every bar here is measured against the same line.
+   */
+  target: number
 }
 
 const PLOT_HEIGHT = 168
@@ -27,7 +32,7 @@ const COLOR_BONUS = 'var(--vigil-gold)'
 /** The surface gap that separates the two stacked fills — never a stroke. */
 const SEGMENT_GAP = 2
 
-export default function WeeklyChart({ days }: WeeklyChartProps) {
+export default function WeeklyChart({ days, target }: WeeklyChartProps) {
   const reduceMotion = useReducedMotion()
   const [hovered, setHovered] = useState<string | null>(null)
   const today = todayISO()
@@ -37,11 +42,11 @@ export default function WeeklyChart({ days }: WeeklyChartProps) {
   // sits comfortably inside the plot even on a week with no overflow at all.
   // Headroom leaves room both for the target line to sit inside the plot and for
   // today's direct label to clear the tallest bar's cap without being clipped.
-  const scaleMax = Math.max(DAILY_TARGET_SECONDS * 1.25, maxStudied * 1.16)
-  const targetPct = (DAILY_TARGET_SECONDS / scaleMax) * 100
+  const scaleMax = Math.max(target * 1.25, maxStudied * 1.16)
+  const targetPct = (target / scaleMax) * 100
 
   const weekTotal = days.reduce((sum, d) => sum + d.studied, 0)
-  const daysOnTarget = days.filter((d) => d.studied >= DAILY_TARGET_SECONDS).length
+  const daysOnTarget = days.filter((d) => d.studied >= target).length
 
   return (
     <section className="vigil-neu-raised rounded-card px-4 pb-4 pt-4" aria-label="Study time this week">
@@ -72,13 +77,13 @@ export default function WeeklyChart({ days }: WeeklyChartProps) {
             className="absolute -top-[7px] right-0 pl-1 text-[10px] tabular-nums text-vigilInkSoft"
             style={{ background: 'var(--vigil-bg-surface)' }}
           >
-            5h
+            {formatTarget(target)}
           </span>
         </div>
 
         <div className="flex h-full items-end gap-1.5">
           {days.map((day, i) => {
-            const { onTarget, bonus } = splitAgainstTarget(day.studied)
+            const { onTarget, bonus } = splitAgainstTarget(day.studied, target)
             const onTargetPct = (onTarget / scaleMax) * 100
             const bonusPct = (bonus / scaleMax) * 100
             const isToday = day.date === today

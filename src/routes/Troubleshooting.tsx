@@ -103,10 +103,11 @@ export default function Troubleshooting() {
                 check how many projects you have.
               </>,
               <>
-                Open the one your data is in, then <Ui>Project Settings</Ui> → <Ui>API Keys</Ui>.
+                Open the one your data is in and press <Ui>Connect</Ui> at the top of the dashboard.
               </>,
               <>
-                Copy the <Ui>Project URL</Ui> and the <Ui>anon</Ui> / <Ui>public</Ui> key from that page.
+                Copy the <Ui>Project URL</Ui> and the publishable (<Ui>anon</Ui> / <Ui>public</Ui>) key with the copy
+                button beside each — whole values, never typed out by hand.
               </>,
               <>
                 Come back to <Ui>Settings</Ui> → <Ui>Supabase connection</Ui> and paste both in.
@@ -254,8 +255,8 @@ export default function Troubleshooting() {
                 find the project you were using before.
               </>,
               <>
-                Open <Ui>Project Settings</Ui> → <Ui>API Keys</Ui> and copy its <Ui>Project URL</Ui> and{' '}
-                <Ui>anon</Ui> / <Ui>public</Ui> key.
+                Press <Ui>Connect</Ui> at the top of the dashboard and copy its <Ui>Project URL</Ui> and publishable
+                (<Ui>anon</Ui> / <Ui>public</Ui>) key, using the copy button beside each.
               </>,
               <>
                 Go to <Ui>Settings</Ui> → <Ui>Supabase connection</Ui> and paste those back in.
@@ -286,11 +287,11 @@ export default function Troubleshooting() {
                 Open <ExternalLink href={dash}>your Supabase dashboard</ExternalLink> and open your Meridian project.
               </>,
               <>
-                Go to <Ui>Project Settings</Ui> → <Ui>API Keys</Ui>.
+                Press <Ui>Connect</Ui> at the top of the dashboard.
               </>,
               <>
-                Copy the <Ui>Project URL</Ui> and the <Ui>anon</Ui> / <Ui>public</Ui> key, and paste them into the
-                setup screen.
+                Copy the <Ui>Project URL</Ui> and the publishable (<Ui>anon</Ui> / <Ui>public</Ui>) key with the copy
+                button beside each, and paste them into the setup screen.
               </>,
             ]}
           />

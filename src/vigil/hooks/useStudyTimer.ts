@@ -9,13 +9,15 @@ const TICK_MS = 250
 
 interface UseStudyTimerArgs {
   days: VigilDay[]
+  /** This week's daily target — what "crossed the line" means for the celebration. */
+  target: number
   ready: boolean
   writeDay: (date: string, patch: Partial<VigilDay>) => Promise<void>
   /** Fired once, at the moment the countdown crosses zero while the user is watching. */
   onCrossTarget?: () => void
 }
 
-export function useStudyTimer({ days, ready, writeDay, onCrossTarget }: UseStudyTimerArgs) {
+export function useStudyTimer({ days, target, ready, writeDay, onCrossTarget }: UseStudyTimerArgs) {
   const [today, setToday] = useState(todayISO)
   const [now, setNow] = useState(() => Date.now())
   const [busy, setBusy] = useState(false)
@@ -65,7 +67,7 @@ export function useStudyTimer({ days, ready, writeDay, onCrossTarget }: UseStudy
 
   useEffect(() => {
     // The clock still ticks while paused: the date can roll over, and a paused day
-    // still needs to hand off to a fresh 5:00:00 at midnight.
+    // still needs to hand off to a fresh countdown at midnight.
     const id = window.setInterval(() => {
       setNow(Date.now())
       const current = todayISO()
@@ -79,10 +81,10 @@ export function useStudyTimer({ days, ready, writeDay, onCrossTarget }: UseStudy
   const wasOverflow = useRef<boolean | null>(null)
   useEffect(() => {
     if (!ready) return
-    const nowOverflow = isOverflow(studied)
+    const nowOverflow = isOverflow(studied, target)
     if (wasOverflow.current === false && nowOverflow) onCrossTarget?.()
     wasOverflow.current = nowOverflow
-  }, [studied, ready, onCrossTarget])
+  }, [studied, target, ready, onCrossTarget])
 
   // Reset the "seen" marker when the day changes, so tomorrow can celebrate again.
   useEffect(() => {

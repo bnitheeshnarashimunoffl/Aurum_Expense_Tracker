@@ -43,7 +43,7 @@ export type ModuleToggle = Exclude<keyof NotificationSettings, 'enabled' | 'time
  */
 export const MODULE_TOGGLES: { key: ModuleToggle; module: string; label: string; detail: string }[] = [
   { key: 'kindle_water', module: 'Kindle', label: 'Water reminders', detail: 'Hourly, 6am to 11pm. Silent overnight.' },
-  { key: 'vigil_study', module: 'Vigil', label: 'Study check-ins', detail: 'Every two hours, and nothing once the five hours are done.' },
+  { key: 'vigil_study', module: 'Vigil', label: 'Study check-ins', detail: 'Every two hours, and nothing once the day’s target is met.' },
   { key: 'loom_classes', module: 'Loom', label: 'Class reminders', detail: '30 minutes before each class, with its room.' },
   { key: 'virtus_gym', module: 'Virtus', label: 'Gym check', detail: '6pm, only if nothing is logged for the day.' },
   { key: 'chronicle_todos', module: 'Chronicle', label: 'To-dos due today', detail: '10am, 2pm, 6pm and 10pm — only when something is actually due.' },

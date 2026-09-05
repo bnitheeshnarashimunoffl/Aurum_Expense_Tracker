@@ -1,4 +1,4 @@
-import { DAILY_TARGET_SECONDS, type VigilDay } from './types'
+import { DEFAULT_TARGET_SECONDS, type VigilDay } from './types'
 
 /**
  * Live studied seconds for a day row. A running timer is stored as
@@ -12,24 +12,39 @@ export function studiedSeconds(day: Pick<VigilDay, 'accumulated_seconds' | 'runn
   return Math.max(0, day.accumulated_seconds + live)
 }
 
+/**
+ * Every function below now takes the target it is measuring against, rather than
+ * closing over a module constant.
+ *
+ * The target is per-week (see `vigil_targets`), and a week's rows have to be
+ * scored against the target that was in force for THAT week — otherwise lowering
+ * the target in April would retroactively turn March's misses into hits, and the
+ * record would quietly rewrite itself. Passing it in is what makes that
+ * impossible to get wrong: there is no ambient "the target" to reach for.
+ *
+ * The default is kept as a parameter default so a caller that genuinely has no
+ * week in hand still behaves exactly as Vigil always did.
+ */
+
 /** Countdown remaining, floored at zero — the timer never shows a negative. */
-export function remainingSeconds(studied: number): number {
-  return Math.max(0, DAILY_TARGET_SECONDS - studied)
+export function remainingSeconds(studied: number, target = DEFAULT_TARGET_SECONDS): number {
+  return Math.max(0, target - studied)
 }
 
 /** Seconds banked beyond the daily target. Zero until the countdown hits 0:00:00. */
-export function overflowSeconds(studied: number): number {
-  return Math.max(0, studied - DAILY_TARGET_SECONDS)
+export function overflowSeconds(studied: number, target = DEFAULT_TARGET_SECONDS): number {
+  return Math.max(0, studied - target)
 }
 
 /** Derived, never stored — the same principle as Kindle deriving completion from `stage`. */
-export function isOverflow(studied: number): boolean {
-  return studied >= DAILY_TARGET_SECONDS
+export function isOverflow(studied: number, target = DEFAULT_TARGET_SECONDS): boolean {
+  return studied >= target
 }
 
 /** 0..1 progress toward the daily target, clamped. Drives the dial and the bars. */
-export function targetFraction(studied: number): number {
-  return Math.min(1, studied / DAILY_TARGET_SECONDS)
+export function targetFraction(studied: number, target = DEFAULT_TARGET_SECONDS): number {
+  if (target <= 0) return 1
+  return Math.min(1, studied / target)
 }
 
 function pad(n: number): string {
@@ -52,7 +67,21 @@ export function formatDuration(totalSeconds: number): string {
   return `${hours}h ${minutes}m`
 }
 
+/**
+ * The target as a short label — "5h", "3h 30m", "45m".
+ *
+ * Its own function rather than `formatDuration`, because this one appears in
+ * running copy ("of 5h", "against today's 3h 30m") where the value is a promise
+ * rather than a measurement, and both places have to agree on how it is spelled.
+ */
+export function formatTarget(targetSeconds: number): string {
+  return formatDuration(targetSeconds)
+}
+
 /** Splits a day's total into the part that counted toward the target and the bonus beyond it. */
-export function splitAgainstTarget(studied: number): { onTarget: number; bonus: number } {
-  return { onTarget: Math.min(studied, DAILY_TARGET_SECONDS), bonus: overflowSeconds(studied) }
+export function splitAgainstTarget(
+  studied: number,
+  target = DEFAULT_TARGET_SECONDS
+): { onTarget: number; bonus: number } {
+  return { onTarget: Math.min(studied, target), bonus: overflowSeconds(studied, target) }
 }

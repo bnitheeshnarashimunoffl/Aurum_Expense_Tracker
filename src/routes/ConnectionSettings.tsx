@@ -198,7 +198,7 @@ export default function ConnectionSettings() {
             />
             <Field
               id="connection-key"
-              label="New anon / public key"
+              label="New publishable key (anon / public)"
               hint="Not the service_role key."
               value={anonKey}
               onChange={(next) => {

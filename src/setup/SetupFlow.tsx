@@ -37,6 +37,19 @@ interface Step {
 
 const SUPABASE = 'https://supabase.com'
 
+/**
+ * Opens the Connect dialog on whichever project the user last had open — the
+ * underscore is Supabase's own wildcard for "the current project", and this is
+ * the link their quickstarts use.
+ *
+ * A LINK RATHER THAN A MENU PATH, on purpose. The previous version of this step
+ * sent people down a named sidebar path and told them to copy a Project URL from
+ * a page that no longer carries one; dashboard navigation is the single most
+ * drift-prone thing this whole flow depends on, and a deep link cannot go stale
+ * the way "Project Settings → API Keys" did.
+ */
+const CONNECT_DIALOG = 'https://supabase.com/dashboard/project/_?showConnect=true'
+
 function buildSteps(): Step[] {
   return [
     {
@@ -168,33 +181,47 @@ function buildSteps(): Step[] {
     {
       key: 'keys',
       title: 'Copy two values',
-      lede: 'An address, and a key. Both are on the same page.',
+      lede: 'An address, and a key. Supabase shows both together, ready to copy.',
       body: (
         <>
           <ClickPath
             steps={[
               <>
-                Open <Ui>Project Settings</Ui> — the gear at the bottom of the left sidebar.
+                Open your project’s <ExternalLink href={CONNECT_DIALOG}>Connect</ExternalLink> panel — it is the{' '}
+                <Ui>Connect</Ui> button along the top of the dashboard, and that link opens it directly.
               </>,
               <>
-                Choose <Ui>API Keys</Ui>. Older projects call this page <Ui>API</Ui> or <Ui>Data API</Ui>.
+                Find <Ui>Project URL</Ui> and press the copy button beside it. Paste it into the first box on the next
+                screen.
               </>,
               <>
-                Copy the <Ui>Project URL</Ui>. It looks like <span className="text-primary">https://abcdefgh.supabase.co</span>.
-              </>,
-              <>
-                Copy the key labelled <Ui>anon</Ui>, <Ui>public</Ui> or <Ui>publishable</Ui>. It is very long and starts
-                with <span className="text-primary">eyJ</span> or <span className="text-primary">sb_publishable_</span>.
+                Do the same for the key beside it — labelled <Ui>Publishable key</Ui> on new projects, or{' '}
+                <Ui>anon</Ui> / <Ui>public</Ui> on older ones. It starts with{' '}
+                <span className="text-primary">sb_publishable_</span> or <span className="text-primary">eyJ</span>.
               </>,
             ]}
           />
-          <Callout tone="warn" title="Never the service_role key">
-            The same page has a second key called <span className="text-primary">service_role</span> or{' '}
-            <span className="text-primary">secret</span>, usually hidden behind a Reveal button. That one ignores every
-            security rule in your database, so anyone who ever got hold of this device could read all of it. The anon
-            key cannot do that — the rules the script installed are what stop it. Meridian will refuse the wrong key if
-            you paste it, but it is worth knowing which is which.
+
+          <Callout title="Copy each one whole — never type it out">
+            Both are complete, ready-to-paste values. The Project URL in particular is the{' '}
+            <span className="text-primary">whole</span> address —{' '}
+            <span className="text-primary">https://abcdefgh.supabase.co</span> — not a project name to be built into
+            one. Assembling it by hand from the address bar is where this goes wrong: one wrong letter, a missing{' '}
+            <span className="text-primary">https://</span> or a stray slash on the end, and the connection simply fails
+            with no way to tell you why. Use the copy button both times.
           </Callout>
+
+          <Callout tone="warn" title="Never the secret key">
+            Supabase also issues a second key — <span className="text-primary">Secret key</span> on new projects,{' '}
+            <span className="text-primary">service_role</span> on older ones — usually behind a Reveal button, and it is
+            not the one you want. That key ignores every security rule in your database, so anyone who ever got hold of
+            this device could read all of it. The publishable key cannot do that: the rules the script installed are
+            what stop it. Meridian refuses the wrong key if you paste it, but it is worth knowing which is which.
+          </Callout>
+
+          <p className="mt-4 text-[12.5px] leading-relaxed text-muted">
+            No Connect button? Both values are also under <Ui>Project Settings</Ui> → <Ui>API Keys</Ui>.
+          </p>
         </>
       ),
     },
@@ -431,18 +458,18 @@ function ConnectStep({
       <Field
         id="setup-url"
         label="Project URL"
-        hint="From Project Settings → API Keys."
+        hint="Copied whole from the Connect panel — not typed out."
         value={url}
         onChange={onUrl}
         placeholder="https://abcdefgh.supabase.co"
       />
       <Field
         id="setup-key"
-        label="anon / public key"
-        hint="The long one. Not the service_role key."
+        label="Publishable key (anon / public)"
+        hint="The long one. Not the secret / service_role key."
         value={anonKey}
         onChange={onKey}
-        placeholder="eyJhbGciOi…"
+        placeholder="sb_publishable_… or eyJhbGciOi…"
         multiline
       />
 

@@ -175,7 +175,7 @@ export function classifyAnonKey(raw: string): KeyVerdict {
       ok: false,
       kind: 'service-role',
       reason:
-        'That is the service_role key. It would let anyone holding this device read everything in your project — use the anon public key instead.',
+        'That is the service_role key. It would let anyone holding this device read everything in your project — use the publishable (anon public) key instead.',
     }
   }
   return { ok: true }

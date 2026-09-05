@@ -145,17 +145,22 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
       {
         title: 'Welcome to Vigil',
         body:
-          'A vigil is a watch kept over time, deliberately, and held to the end. Five hours a day is a much easier promise to keep when something is keeping the watch alongside you.',
+          'A vigil is a watch kept over time, deliberately, and held to the end. Whatever you set yourself for the week, it is a much easier promise to keep when something is keeping the watch alongside you.',
       },
       {
         anchor: 'vigil-timer',
-        title: 'Five hours, counting down',
+        title: 'Your target, counting down',
         body: 'Tap once to start, once to pause, as many times as the day needs. It keeps time with the app closed, so you can put the phone down mid-session.',
       },
       {
         anchor: 'vigil-chart',
-        title: 'Past five is bonus, not wasted',
+        title: 'Past the line is bonus, not wasted',
         body: 'The countdown reaches zero and keeps going. Anything beyond the target shows as bonus time on the week rather than a bar that just stops.',
+      },
+      {
+        anchor: 'vigil-settings',
+        title: 'Five hours is only the default',
+        body: 'Set your own daily target in Settings — anything from thirty minutes to twelve hours. You choose it once a week, and it then holds until Monday: a target you can lower on a bad Thursday is one the week always meets.',
       },
       {
         anchor: 'vigil-topics',

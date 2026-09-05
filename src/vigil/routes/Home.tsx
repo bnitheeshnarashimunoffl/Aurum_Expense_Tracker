@@ -4,8 +4,9 @@ import { formatDate } from '@/lib/format'
 import { useToast } from '@/hooks/useToast'
 import LoadingRing from '@/components/LoadingRing'
 import { useVigilDays } from '../hooks/useVigilDays'
+import { useVigilTarget } from '../hooks/useVigilTarget'
 import { useStudyTimer } from '../hooks/useStudyTimer'
-import { studiedSeconds } from '../lib/time'
+import { formatTarget, studiedSeconds } from '../lib/time'
 import WeeklyChart, { type WeeklyChartDay } from '../components/WeeklyChart'
 import StudyTimer from '../components/StudyTimer'
 import VigilToast from '../components/VigilToast'
@@ -16,18 +17,22 @@ export default function Home() {
   const monday = mondayOf()
   const dates = useMemo(() => weekDates(monday), [monday])
   const { days, loading, writeDay } = useVigilDays({ from: dates[0], to: dates[6] })
+  // Fixed for the whole week by the time anyone reads it here — Settings is the
+  // only place it can be chosen, and only once per week.
+  const { current: target, loading: targetLoading } = useVigilTarget()
   const { message, showToast } = useToast()
   const [celebrationKey, setCelebrationKey] = useState(0)
 
   const onCrossTarget = useCallback(() => {
     setCelebrationKey((k) => k + 1)
-    showToast("5 hours done — everything from here is bonus", 3200)
+    showToast(`${formatTarget(target)} done — everything from here is bonus`, 3200)
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate([18, 60, 30])
-  }, [showToast])
+  }, [showToast, target])
 
   const { studied, running, busy, now, toggle } = useStudyTimer({
     days,
-    ready: !loading,
+    target,
+    ready: !loading && !targetLoading,
     writeDay,
     onCrossTarget,
   })
@@ -57,18 +62,19 @@ export default function Home() {
         </div>
       </header>
 
-      {loading ? (
+      {loading || targetLoading ? (
         <LoadingRing label="Loading study time" />
       ) : (
         <>
           {/* Deliberate order: the week first as context, then today's timer. */}
           <div data-tour="vigil-chart">
-            <WeeklyChart days={chartDays} />
+            <WeeklyChart days={chartDays} target={target} />
           </div>
 
           <div data-tour="vigil-timer" className="mt-9">
             <StudyTimer
               studied={studied}
+              target={target}
               running={running}
               busy={busy}
               onToggle={handleToggle}
@@ -80,7 +86,7 @@ export default function Home() {
 
       <VigilToast message={message} />
 
-      <ModuleWalkthrough module="vigil" ready={!loading} />
+      <ModuleWalkthrough module="vigil" ready={!loading && !targetLoading} />
     </div>
   )
 }

@@ -60,6 +60,7 @@ import { sendPush, vapidFromEnv, type PushSubscription } from '../_shared/webpus
 import { localClock, hhmmToMinutes, formatClockTime, type LocalClock } from '../_shared/localtime.ts'
 import {
   chronicleTodosCopy,
+  DEFAULT_TARGET_SECONDS as VIGIL_DEFAULT_TARGET,
   kindleWaterCopy,
   loomClassCopy,
   vigilStudyCopy,
@@ -246,7 +247,7 @@ Deno.serve(async (req: Request) => {
     /* ----------------------------------------------------------------- Vigil */
     if (settings.vigil_study && inWindow(clock, VIGIL_HOURS, MINUTE_OFFSET.vigil_study)) {
       const studied = await studiedSecondsToday(supabase, userId, clock.date, now)
-      const copy = vigilStudyCopy(studied, clock.hour)
+      const copy = vigilStudyCopy(studied, clock.hour, await vigilTargetFor(supabase, userId, clock.date))
       // Target met — vigilStudyCopy returns null and nothing is sent or claimed.
       if (copy) {
         if (await claim(userId, 'vigil_study', `${clock.date}:${clock.hour}`)) {
@@ -347,6 +348,33 @@ async function studiedSecondsToday(supabase, userId: string, date: string, now: 
   if (!day) return 0
   const live = day.running_since ? Math.max(0, (now.getTime() - new Date(day.running_since).getTime()) / 1000) : 0
   return Math.max(0, day.accumulated_seconds + live)
+}
+
+/**
+ * The daily target in force for the week containing `date`.
+ *
+ * Vigil's target is chosen per week and frozen inside it (see vigil_targets), so
+ * a reminder has to quote the week's own number — telling somebody on a three-hour
+ * week that they have "2h left against five" is worse than sending nothing.
+ *
+ * Monday is computed here rather than joined in SQL because week_start is stored
+ * as the user's LOCAL Monday, and `clock.date` is already their local date.
+ * Falls back to five hours when the week has no row, or when the table does not
+ * exist at all in an older project.
+ */
+async function vigilTargetFor(supabase, userId: string, date: string): Promise<number> {
+  const d = new Date(`${date}T00:00:00Z`)
+  const weekday = d.getUTCDay()
+  d.setUTCDate(d.getUTCDate() - (weekday === 0 ? 6 : weekday - 1))
+  const monday = d.toISOString().slice(0, 10)
+
+  const { data, error } = await supabase
+    .from('vigil_targets')
+    .select('target_seconds')
+    .eq('user_id', userId)
+    .eq('week_start', monday)
+  if (error || !data?.[0]) return VIGIL_DEFAULT_TARGET
+  return data[0].target_seconds as number
 }
 
 interface UpcomingClass {

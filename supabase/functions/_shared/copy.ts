@@ -72,26 +72,44 @@ export function kindleWaterCopy(
 /* Vigil — study progress, every two hours                                     */
 /* -------------------------------------------------------------------------- */
 
-const TARGET_SECONDS = 5 * 60 * 60
+/**
+ * The fallback when a week has no target of its own — the number Vigil used for
+ * everybody before the target became settable. The real one is read per week from
+ * `vigil_targets` and passed in.
+ */
+export const DEFAULT_TARGET_SECONDS = 5 * 60 * 60
 
 /**
  * Three bands, and a fourth that sends nothing at all.
  *
  * The band boundaries matter more than the wording: congratulating someone on
  * "good progress" at eleven minutes reads as sarcasm, and "final stretch" at two
- * hours reads as a lie. 45 minutes is where a session stops being a false start,
- * and 3h30 is where the remaining hour and a half is genuinely the last push.
+ * hours reads as a lie.
+ *
+ * The boundaries are now FRACTIONS of the target rather than fixed clock times,
+ * because the target is the user's to choose. 45 minutes into a five-hour day is
+ * a false start; 45 minutes into a ninety-minute day is half done, and being told
+ * "starting is the whole trick" at that point would be insulting. 15% and 70% are
+ * where the original 45m and 3h30 sat against five hours, so a five-hour target
+ * behaves exactly as it always did.
  */
-export function vigilStudyCopy(studiedSeconds: number, hourSeed: number): NotificationCopy | null {
-  if (studiedSeconds >= TARGET_SECONDS) return null // Target met — say nothing. Ever.
+export function vigilStudyCopy(
+  studiedSeconds: number,
+  hourSeed: number,
+  targetSeconds: number = DEFAULT_TARGET_SECONDS
+): NotificationCopy | null {
+  const target = targetSeconds > 0 ? targetSeconds : DEFAULT_TARGET_SECONDS
+  if (studiedSeconds >= target) return null // Target met — say nothing. Ever.
 
-  const remaining = TARGET_SECONDS - studiedSeconds
+  const remaining = target - studiedSeconds
   const done = duration(studiedSeconds)
   const left = duration(remaining)
 
-  if (studiedSeconds < 45 * 60) {
+  const full = duration(target)
+
+  if (studiedSeconds < target * 0.15) {
     const title = pick(
-      ['Five hours, whenever you are ready', 'Today’s five is still ahead', 'The clock is waiting'],
+      [`${full}, whenever you are ready`, `Today’s ${full} is still ahead`, 'The clock is waiting'],
       hourSeed
     )
     const body =
@@ -101,12 +119,12 @@ export function vigilStudyCopy(studiedSeconds: number, hourSeed: number): Notifi
     return { title, body }
   }
 
-  if (studiedSeconds < 3.5 * 60 * 60) {
+  if (studiedSeconds < target * 0.7) {
     const title = pick([`${done} on the clock`, 'That is real time logged', 'Good stretch behind you'], hourSeed)
-    return { title, body: `${left} left against five. No rush — the timer holds its place.` }
+    return { title, body: `${left} left against ${full}. No rush — the timer holds its place.` }
   }
 
-  const title = pick([`Final stretch — ${left} left`, `${left} between you and done`, 'Almost five'], hourSeed)
+  const title = pick([`Final stretch — ${left} left`, `${left} between you and done`, `Almost ${full}`], hourSeed)
   return { title, body: pick(['One more sitting closes it out.', 'This is the easy part now.', `${done} down already.`], hourSeed) }
 }
 

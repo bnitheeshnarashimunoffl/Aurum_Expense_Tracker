@@ -1,9 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
-import { formatClock, formatDuration, isOverflow, overflowSeconds, remainingSeconds, targetFraction } from '../lib/time'
+import { formatClock, formatDuration, formatTarget, isOverflow, overflowSeconds, remainingSeconds, targetFraction } from '../lib/time'
 
 interface StudyTimerProps {
   studied: number
+  /** This week's daily target, in seconds. The dial is drawn against it, not against five hours. */
+  target: number
   running: boolean
   busy: boolean
   onToggle: () => void
@@ -19,13 +21,13 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 /** Rays for the milestone burst — fixed angles, so it never renders a different shape twice. */
 const BURST_RAYS = Array.from({ length: 12 }, (_, i) => (i * 360) / 12)
 
-export default function StudyTimer({ studied, running, busy, onToggle, celebrationKey }: StudyTimerProps) {
+export default function StudyTimer({ studied, target, running, busy, onToggle, celebrationKey }: StudyTimerProps) {
   const reduceMotion = useReducedMotion()
   const gradientId = useId()
-  const overflow = isOverflow(studied)
-  const bonus = overflowSeconds(studied)
-  const remaining = remainingSeconds(studied)
-  const fraction = targetFraction(studied)
+  const overflow = isOverflow(studied, target)
+  const bonus = overflowSeconds(studied, target)
+  const remaining = remainingSeconds(studied, target)
+  const fraction = targetFraction(studied, target)
 
   // The countdown ring empties as the target is approached; in overflow it is full
   // and a second ring winds around it to carry the bonus instead.
@@ -172,7 +174,7 @@ export default function StudyTimer({ studied, running, busy, onToggle, celebrati
                 <span className="font-display text-[2.6rem] font-bold leading-none tabular-nums text-vigilGold">
                   +{formatClock(bonus)}
                 </span>
-                <span className="mt-1.5 text-[11px] text-vigilInkSoft">5h target met</span>
+                <span className="mt-1.5 text-[11px] text-vigilInkSoft">{formatTarget(target)} target met</span>
               </motion.div>
             ) : (
               <motion.div
