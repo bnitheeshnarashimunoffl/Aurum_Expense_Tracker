@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { CSSProperties, ReactNode } from 'react'
 import Horizon from '@/components/Horizon'
+import Credits from '@/components/Credits'
 import IosInstallBanner, { useIosInstallGate } from '@/components/IosInstallBanner'
 import AurumCard from '@/components/dashboard/AurumCard'
 import KindleCard from '@/components/dashboard/KindleCard'
@@ -154,6 +155,10 @@ export default function Launcher() {
       </div>
 
       <Horizon variant="inline" />
+
+      {/* Under the horizon rather than above it: the horizon is what closes the
+          page, and a signature belongs after the close, not inside it. */}
+      <Credits mark={false} />
 
       {showInstallBanner && <IosInstallBanner variant="floating" onDismiss={installGate.dismiss} />}
 

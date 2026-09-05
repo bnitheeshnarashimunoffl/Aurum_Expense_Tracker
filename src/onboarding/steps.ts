@@ -34,8 +34,12 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     label: 'Meridian',
     steps: [
       {
-        title: 'Six apps, one day',
-        body: 'Money, habits, study, classes, training, and everything you meant to write down — all under one login, all in one place.',
+        // The name and the pitch in one card. They were two, and two centred
+        // cards before the first spotlight is a beat too long for the very
+        // first thing anyone sees of the platform.
+        title: 'Welcome to Meridian',
+        body:
+          'A meridian is the line the rest of the map is measured from — noon, longitude, where you are standing. Named for the same idea: money, habits, study, classes, training and everything you meant to write down, all under one login, and one place to read the whole day against.',
       },
       {
         anchor: 'meridian-grid',
@@ -70,6 +74,11 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     label: 'Aurum — finance',
     steps: [
       {
+        title: 'Welcome to Aurum',
+        body:
+          'Aurum is Latin for gold — the Au on every periodic table. It seemed the right name for the part of Meridian that keeps an eye on what you have, and on what it is quietly turning into.',
+      },
+      {
         // First, because on a new account it is the only thing that can be done:
         // nothing can be logged until a category exists. The walkthrough runs on
         // the empty first-run screen as well as the real dashboard, so the step
@@ -102,6 +111,11 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     label: 'Kindle — habits',
     steps: [
       {
+        title: 'Welcome to Kindle',
+        body:
+          'To kindle is to get a flame going and then keep it going. That is the whole of a habit — not one heroic day, but the small daily effort that stops the thing going out.',
+      },
+      {
         anchor: 'kindle-grid',
         title: 'Your week, one row per habit',
         body: 'One cell per habit per day. Colour runs from red to green as you get closer to that day’s target, so a bad week is obvious without reading a number.',
@@ -129,6 +143,11 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     label: 'Vigil — study',
     steps: [
       {
+        title: 'Welcome to Vigil',
+        body:
+          'A vigil is a watch kept over time, deliberately, and held to the end. Five hours a day is a much easier promise to keep when something is keeping the watch alongside you.',
+      },
+      {
         anchor: 'vigil-timer',
         title: 'Five hours, counting down',
         body: 'Tap once to start, once to pause, as many times as the day needs. It keeps time with the app closed, so you can put the phone down mid-session.',
@@ -150,6 +169,11 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     key: 'loom',
     label: 'Loom — timetable',
     steps: [
+      {
+        title: 'Welcome to Loom',
+        body:
+          'A loom is where separate threads are held in place long enough to become one cloth. Classes, rooms and hours do exactly that every week, so the name stayed.',
+      },
       {
         title: 'A timetable, built in three passes',
         body: 'A term to hold it, a library of your classes, then the week itself. It sounds like a lot; it is about ten minutes once, and then the timetable is just there every morning.',
@@ -194,6 +218,11 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     key: 'virtus',
     label: 'Virtus — gym',
     steps: [
+      {
+        title: 'Welcome to Virtus',
+        body:
+          'Virtus is the Roman word for strength and valour — the composed, disciplined kind rather than the loud kind. Training is something you do carefully and repeatedly, and the name is meant to sound like that.',
+      },
       {
         title: 'Three things, in this order',
         body: 'Virtus cannot log a set until it knows what you lift, how those lifts group into workout days, and which day is which. That is the whole setup, it happens once, and until it is done the app will look like it does nothing.',
@@ -240,6 +269,11 @@ export const WALKTHROUGHS: Record<ModuleKey, WalkthroughDefinition> = {
     key: 'chronicle',
     label: 'Chronicle — notes & to-dos',
     steps: [
+      {
+        title: 'Welcome to Chronicle',
+        body:
+          'A chronicle is a plain record of what happened, kept as it happens. To-dos, notes and recordings all turn out to be that — an honest account of your days, written one line at a time.',
+      },
       {
         anchor: 'chronicle-tabs',
         title: 'To-dos, notes, voice',

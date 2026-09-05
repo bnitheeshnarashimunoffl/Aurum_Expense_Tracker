@@ -6,6 +6,7 @@ import SunExitButton from '@/components/SunExitButton'
 import Toggle from '@/components/Toggle'
 import Toast from '@/components/Toast'
 import IosInstallBanner, { useIosInstallGate } from '@/components/IosInstallBanner'
+import Credits from '@/components/Credits'
 import { InstallRow, useInstallAffordance } from '@/components/InstallPrompt'
 import { useToast } from '@/hooks/useToast'
 import { MODULE_TOGGLES, useNotificationSettings } from '@/hooks/useNotificationSettings'
@@ -458,6 +459,10 @@ export default function MeridianSettings() {
       >
         Sign out
       </button>
+
+      {/* Below Sign out, which is the last thing on this screen that does
+          anything. Credits and the contact line are read, not used. */}
+      <Credits contact />
 
       <Toast message={message} />
     </div>
