@@ -10,15 +10,6 @@ React + TypeScript · Vite · Tailwind · Supabase · Vercel · Installable PWA
 
 </div>
 
----
-
-> **Note on the repository name.** This repo started life as *Aurum*, a finance
-> tracker. Aurum is still here — it is now one of six modules inside Meridian,
-> the platform that grew around it. The directory name is the only thing that
-> never caught up.
-
----
-
 ## Table of contents
 
 - [What Meridian is](#what-meridian-is)
